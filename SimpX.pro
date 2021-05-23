@@ -15,13 +15,15 @@ SOURCES += \
     mainwindow.cpp \
     simpglwidget.cpp \
     simpleton4.cpp \
-    simpleton4asm.cpp
+    simpleton4asm.cpp \
+    utils.cpp
 
 HEADERS += \
     mainwindow.h \
     simpglwidget.h \
     simpleton4.h \
-    simpleton4asm.h
+    simpleton4asm.h \
+    utils.h
 
 FORMS += \
     mainwindow.ui

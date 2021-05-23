@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     fmt.setProfile( QSurfaceFormat::CompatibilityProfile );
     fmt.setSwapBehavior( QSurfaceFormat::DoubleBuffer );
     QSurfaceFormat::setDefaultFormat( fmt );
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

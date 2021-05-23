@@ -9,10 +9,15 @@ class SimpGLWidget : public QOpenGLWidget
     Q_OBJECT
 
     QOpenGLShaderProgram prg;
-    int a_vertice, a_color;
+    int a_vertice;
+    GLint texScr = 0;
 
 public:
     SimpGLWidget(QWidget*&p): QOpenGLWidget(p) {};
+    ~SimpGLWidget();
+
+signals:
+    void painted();
 
     // QGLWidget interface
 protected:

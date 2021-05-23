@@ -1,5 +1,5 @@
 #include "simpleton4.h"
-#include <conio.h>
+#include <sstream>
 
 namespace Simpleton
 {
@@ -145,9 +145,7 @@ mWord Machine::getMem( mWord addr )
 	}
 	if ( addr == PORT_CONSOLE )
 	{
-		if ( !kbhit() )
-			return 0;
-		return _getch();
+        // undefined realization...
 	}
 	return 0;
 };

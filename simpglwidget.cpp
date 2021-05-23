@@ -4,11 +4,10 @@
 static const char *vertSrc =
     "#version 330\n"
     "in vec2 a_vertice; \n"
-    "in vec3 a_color; \n"
     "out vec3 v_color; \n"
     "void main() \n"
     "{ \n"
-    "   v_color = a_color; \n"
+    "   v_color = vec3( (a_vertice.x + 1.0) / 2.0, (a_vertice.y + 1.0) / 2.0, 0.0 ); \n"
     "   gl_Position = vec4( a_vertice.x, a_vertice.y, 0.0, 1.0 ); \n"
     "} \n";
 static const char *fragSrc =
@@ -34,7 +33,6 @@ void SimpGLWidget::initializeGL()
     if ( !res )
         goto error;
     a_vertice   = prg.attributeLocation( "a_vertice" );
-    a_color     =  prg.attributeLocation( "a_color" );
     return; // all is ok
 error:
     QMessageBox msg;
@@ -53,16 +51,20 @@ void SimpGLWidget::paintGL()
     x += 0.01f;
     if ( x > 1.0f )
         x = 0.0f;
-    GLfloat verts[ 2 * 3 ] = { -1.0f, 1.0f, +1.0f, 1.0f, 0.0f, -1.0f };
-    GLfloat colors[ 3 * 3 ] = { 0, 0, 1, 1, 0, 0, 0, 1, x };
+    static GLfloat verts[ 2 * 4 ] =
+    {
+        -1.0f, +1.0f,
+        +1.0f, +1.0f,
+        -1.0f, -1.0f,
+        +1.0f, -1.0f
+    };
     prg.bind();
     prg.enableAttributeArray( a_vertice );
     prg.setAttributeArray( a_vertice, verts, 2 );
-    prg.enableAttributeArray( a_color );
-    prg.setAttributeArray( a_color, colors, 3 );
 
-    glDrawArrays( GL_TRIANGLES, 0, 3 );
+    glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
 
     prg.disableAttributeArray( a_vertice );
-    prg.disableAttributeArray( a_color );
+
+    emit painted();
 }

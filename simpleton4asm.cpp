@@ -110,7 +110,7 @@ void Assembler::parseEnd()
 Assembler::Identifier *Assembler::findIdentifier( const std::string &name, bool newSyntax )
 {
 	Identifier *res = nullptr;
-	for ( int i = 0; i < identifiers.size(); i++ )
+    for ( size_t i = 0; i < identifiers.size(); i++ )
 	{
 		Identifier &ident = identifiers[ i ];
 		if ( !newSyntax && (ident.mode == Identifier::AsmNew) )
@@ -227,7 +227,7 @@ static bool isTerminal( char c )
 	return (c == '(') || (c == ')') || (c == '[') || (c == ']');
 };
 
-std::string Assembler::extractNextLexem( const std::string &parseString, int &parsePos )
+std::string Assembler::extractNextLexem( const std::string &parseString, size_t &parsePos )
 {
 	std::string res;
 	if ( parsePos >= parseString.length() )
@@ -286,7 +286,7 @@ void Assembler::extractLexems( const std::string &parseString, std::vector< std:
 	data.clear();
 	hasLabel = false;
 	bool first = true;
-	int parsePos = 0;
+    size_t parsePos = 0;
 	while ( true )
 	{
 		std::string cur = extractNextLexem( parseString, parsePos );
@@ -319,9 +319,9 @@ std::string Assembler::peekNextLexem()
 
 void Assembler::putBackLexem()
 {
-	curLexem--;
-	if ( curLexem < 0 )
-		throw ParseError( lineNum, "invalid putBackLexem()!" );
+    if ( curLexem <= 0 )
+        throw ParseError( lineNum, "invalid putBackLexem()!" );
+    curLexem--;
 };
 
 static bool lexemIsNumberLiteral( const std::string &lexem  )
@@ -416,7 +416,7 @@ Assembler::ExprNode Assembler::parseBrackets( bool allowEndOfLine )
 	{
 		int maxOpIdx = 1;
 		mTag maxOpPr = operatorPriority( nodes[ 1 ].getName() );
-		for ( int i = 3; i < nodes.size(); i++ )
+        for ( size_t i = 3; i < nodes.size(); i++ )
 		{
 			mTag curPr = operatorPriority( nodes[ i ].getName() );
 			if ( curPr > maxOpPr )
@@ -583,7 +583,7 @@ void Assembler::parseLine()
 				if ( lexem[ 0 ] == '"' )
 				{
 					lexem = getNextLexem();
-					for ( int i = 1; i < lexem.length(); i++ )
+                    for ( size_t i = 1; i < lexem.length(); i++ )
 					{
 						data( lexem[ i ] );
 					}
@@ -876,7 +876,7 @@ bool Assembler::parseFile( const std::string &fileName )
 		// Assemble source code:
 		parseStart();
 		std::string line;
-		for ( int i = 0; i < lines.size(); i++ )
+        for ( size_t i = 0; i < lines.size(); i++ )
 		{
 			lineNum++;
 			curLexem = 0;
@@ -887,7 +887,7 @@ bool Assembler::parseFile( const std::string &fileName )
 				if ( lexems[ 0 ][ 0 ] != '.' )
 					lastLabel = lexems[ 0 ];	// update last label if it is not local
 			// explode local ifentifiers
-			for ( int j = 0; j < lexems.size(); j++ )
+            for ( size_t j = 0; j < lexems.size(); j++ )
 			{
 				if ( lexems[ j ][ 0 ] == '.' )
 					lexems[ j ] = lastLabel + lexems[ j ];
@@ -913,7 +913,7 @@ bool Assembler::parseFile( const std::string &fileName )
 		std::string fname;
 		if ( error.getFile() >= 0 )
 			fname = files[ error.getFile() ].name;
-		errorMessage = std::string( "Preprocessor error at file '" ) + fname + "' line " + std::to_string( error.getLine() ) + " Reason: " + error.getReason();
+        errorMessage = std::string( "Preprocessor error at file '" ) + fname + "' line " + std::to_string( errorLine ) + " Reason: " + error.getReason();
 		return false;
 	}
 	catch ( const Simpleton::ParseError &error )
@@ -924,9 +924,9 @@ bool Assembler::parseFile( const std::string &fileName )
 		line.num = 0;
 		line.label = false;
 		SourceFile file{ "<unknown>" };
-		if ( (errorLine > 0) && (errorLine <= lines.size()) )
+        if ( (errorLine > 0) && (errorLine <= (int)lines.size()) )
 			line = lines[ errorLine - 1 ];
-		if ( (line.file >= 0) && (line.file < files.size()) )
+        if ( (line.file >= 0) && (line.file < (int)files.size()) )
 			file = files[ line.file ];
 		
 		errorMessage = std::string( "Parse error at file '" ) + file.name + "' line " + std::to_string( line.num ) + " Reason: " + error.getReason();

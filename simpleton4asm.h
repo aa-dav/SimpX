@@ -18,16 +18,16 @@ class ParseError
 	std::string reason;
 	int line;
 public:
-	ParseError( int _line, const std::string &_reason ): line( _line ), reason( _reason ) {};
+    ParseError( int _line, const std::string &_reason ): reason( _reason ), line( _line ) {};
 	int getLine() const { return line; };
 	const std::string &getReason() const { return reason; };
 };
 
 class PreProcessorError
 {
-	std::string reason;
-	int line;
-	int file;
+    int file;
+    int line;
+    std::string reason;
 public:
 	PreProcessorError( int _file, int _line, const std::string &_reason ): file( _file ), line( _line ), reason( _reason ) {};
 	int getLine() const { return line; };
@@ -187,8 +187,10 @@ private:
 		}
 
 		//Identifier() {};
-		Identifier( const std::string &_name, Type _type, int _value, Mode _mode ): node( ExprNode::Literal, "", _value, 0 ), name( _name ), type( _type ), mode( _mode ) {};
-		Identifier( const Identifier &src ): name( src.name ), type( src.type ), node( src.node ), mode( src.mode ) {};
+        Identifier( const std::string &_name, Type _type, int _value, Mode _mode ):
+            node( ExprNode::Literal, "", _value, 0 ), name( _name ), mode( _mode ), type( _type ) {};
+        Identifier( const Identifier &src ):
+            node( src.node ), name( src.name ), mode( src.mode ), type( src.type ) {};
 	};
 
 	struct ForwardReference
@@ -207,10 +209,10 @@ private:
 		};
 
 		int getLine() { return node.getLine(); };
-		//ForwardReference() {};
-		ForwardReference( const std::string _name, mWord _addr, int _lineNum, int _type = Address ): node( ExprNode::Symbol, _name, 0, _lineNum ), addr( _addr ), type( _type ) {};
-		ForwardReference( const ExprNode &_node, mWord _addr, int _type = Address ): node( _node ), addr( _addr ), type( _type ) {};
-		//ForwardReference( const ForwardReference &src ): name( src.name ), addr( src.addr ), lineNum( src.lineNum ), type( src.type ) {};
+        ForwardReference( const std::string _name, mWord _addr, int _lineNum, int _type = Address ):
+            type( _type ), addr( _addr ), node( ExprNode::Symbol, _name, 0, _lineNum ) {};
+        ForwardReference( const ExprNode &_node, mWord _addr, int _type = Address ):
+            type( _type ), addr( _addr ), node( _node ) {};
 	};
 
 	Machine		*machine;
@@ -219,7 +221,7 @@ private:
 	int		lineNum;
 	std::string	lastLabel;
 	std::string	curLabel;
-	int		curLexem;
+    size_t		curLexem;
 	std::vector< Identifier >	identifiers;
 	std::vector< ForwardReference >	forwards;
 	bool newSyntaxMode = false;
@@ -232,7 +234,7 @@ private:
 
 	Identifier *findIdentifier( const std::string &name, bool newSyntex );
 
-	std::string extractNextLexem( const std::string &parseString, int &parsePos );
+    std::string extractNextLexem( const std::string &parseString, size_t &parsePos );
 	void extractLexems( const std::string &parseString, std::vector< std::string > &data, bool &hasLabel );
 
 	void parseLine();

@@ -2,7 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTimer>
+#include <QTime>
+#include <QLabel>
+#include <QSettings>
+#include "utils.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -12,7 +15,8 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    QTimer timer;
+    QLabel *statusLabel = nullptr;
+    FpsMeter fps;
 
 public:
     MainWindow(QWidget *parent = nullptr);
