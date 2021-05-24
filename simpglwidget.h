@@ -3,18 +3,24 @@
 
 #include <QOpenGLWidget>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLFunctions_3_3_Compatibility>
 
 class SimpGLWidget : public QOpenGLWidget
 {
     Q_OBJECT
 
     QOpenGLShaderProgram prg;
-    int a_vertice;
-    GLint texScr = 0;
+    GLint u_texture;
+    GLint a_vertice;
+    GLuint texScr = 0;
+    QOpenGLFunctions_3_3_Compatibility gl;
+    uint16_t *screen = nullptr;
 
 public:
     SimpGLWidget(QWidget*&p): QOpenGLWidget(p) {};
     ~SimpGLWidget();
+
+    void setScreen( uint16_t *data );
 
 signals:
     void painted();

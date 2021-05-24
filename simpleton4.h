@@ -171,11 +171,15 @@ public:
 	{
 		return reg[ REG_PC ];
 	}
+    mWord *getMem()
+    {
+        return mem;
+    }
 
 	void reset();
 	void step();
-	void show( int memStart );
 
+    void show( int memStart );
 	std::string operandToStr( mTag r, mTag i, int &addr, bool result = false );
 	void showDisasm( int addr );
 

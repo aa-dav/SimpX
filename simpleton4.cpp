@@ -178,12 +178,10 @@ mWord Machine::read( mTag r, mTag i )
 			addr = reg[ r ];
 		if ( (r == REG_PC) || (r == REG_SP) )
 			reg[ r ]++;
-		//std::cout << "addr:" << addr << " read:" << getMem( addr ) << "\n";
 		return getMem( addr );
 	}
 	else
 	{
-		//std::cout << "reg:" << r << " read:" << reg[ r ] << "\n";
 		return reg[ r ];
 	}
 }
@@ -208,7 +206,6 @@ void Machine::step()
 	}
 	y = read( instr.y, instr.yi );
 
-	//std::cout << "cmd:" << (int) instr.cmd << " y:" << y << " x:" << x << "\n";
 	// ALU
 	tmp = 0;
 	switch ( instr.cmd )	// combined opcode
@@ -273,12 +270,10 @@ void Machine::step()
 				((cond == COND_LESS_EQ) && (getFlag( FLAG_ZERO ) || (getFlag( FLAG_OVERFLOW ) != getFlag( FLAG_SIGN )))) )
 			{
 				a = y + x;
-				//std::cout << "COND:" << a << "\n";
 			}
 			else
 			{
 				a = y;
-				//std::cout << "NOT COND:" << a << "\n";
 			}
 			break;
 	case OP_RRCI:	//
