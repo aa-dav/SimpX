@@ -215,7 +215,7 @@ private:
             type( _type ), addr( _addr ), node( _node ) {};
 	};
 
-	Machine		*machine;
+    MMU         *mmu;
 	mWord		org = 0;
 	std::string	errorMessage;
 	int		lineNum;
@@ -245,7 +245,7 @@ private:
 public:
 	Assembler() = delete;
 	Assembler( const Assembler &src ) = delete;
-	Assembler( Machine *m ): machine( m ) {};
+    Assembler( MMU *_mmu ): mmu( _mmu ) {};
 
 	void setOrg( mWord newOrg )
 	{
@@ -255,13 +255,13 @@ public:
 	{	
 		if ( addr == -1 )
 			addr = org++;
-		machine->mem[ addr ] = machine->instr.encode( _cmd, _r, _y, _x );
+        mmu->write( addr, Instruction::encode( _cmd, _r, _y, _x ) );
 	};
 	void data( mWord _data, int addr = -1 )
 	{
 		if ( addr == -1 )
 			addr = org++;
-		machine->mem[ addr ] = _data;
+        mmu->write( addr, _data );
 	};
 	bool getNewSyntax() { return newSyntax; };
 

@@ -13,7 +13,8 @@ static QString appName = "SimpX";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , asm4( &simp4 )
+    , simp( &mmu )
+    , asm4( &mmu )
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -46,13 +47,13 @@ MainWindow::~MainWindow()
 void MainWindow::on_Timer()
 {
     fps.tick();
-    statusLabel->setText( QStringLiteral( "fps: %1" ).arg( fps.getFps() ) );
+    statusLabel->setText( QStringLiteral( "fps: %1 run: %2" ).arg( fps.getFps() ).arg( run ) );
     if ( run )
     {
         for ( int i =0; i < 1000; i++ )
-            simp4.step();
+            simp.step();
     }
-    ui->glWidget->setScreen( simp4.getMem() + 32768 );
+    ui->glWidget->setScreen( mmu.getPtr( 32768 ) );
     ui->glWidget->update();
 }
 

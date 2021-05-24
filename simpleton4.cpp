@@ -9,171 +9,26 @@ namespace Simpleton
 	return (cmd == OP_ADDI) || (cmd == OP_ADDIS) || (cmd == OP_RRCI);
 }
 
-static const char *NameCmds[] = {
-"addis",
-"addi ",
-"adds ",
-"add  ",
-"adc  ",
-"sub  ",
-"sbc  ",
-"and  ",
-"or   ",
-"xor  ",
-"cadd ",
-"rrci ",
-"rrc  " };
-
-static const char *NameRegs[] = {
-"r0",
-"r1",
-"r2",
-"r3",
-"r4",
-"sp",
-"pc",
-"pw",
-"[ r0 ]",
-"[ r1 ]",
-"[ r2 ]",
-"[ r3 ]",
-"[ r4 ]",
-"[ sp ]",
-"[ pc ]",
-"[ pw ]"
-};
-
-std::string Machine::operandToStr( mTag r, mTag i, int &addr, bool result )
-{
-	std::stringstream ss;
-	if ( result && (i == 1) && (r == REG_PC) )
-	{
-		ss << "void";
-	}
-	else if ( (i == 1) && (r == REG_PC) )
-	{
-		ss << "$" << std::uppercase << std::hex << mem[ addr++ ];
-	}
-	else if ( (i == 1) && (r == REG_PSW) )
-	{
-		ss << "[ $" << std::uppercase << std::hex << std::setw( 4 ) << std::setfill( '0' ) << mem[ addr++ ] << " ]";
-	}
-	else
-	{
-		ss << NameRegs[ i * 8 + r ];
-	}
-	return ss.str();
-};
-
-void Machine::showDisasm( int addr )
-{
-	Instruction instr;
-	std::string sr, sy, sx;
-	std::cout << std::uppercase << std::hex << std::setw( 4 ) << std::setfill( '0' ) << addr  << ": ";
-	instr.decode( mem[ addr++ ] );
-	std::cout << NameCmds[ instr.cmd ] << " ";
-	if ( instr.isInplaceImmediate( instr.cmd ) )
-	{
-		sx = std::to_string( (int) ((instr.xi == 1) ? instr.x - 8 : instr.x) );
-	}
-	else
-	{
-		sx = operandToStr( instr.x, instr.xi, addr );
-	}
-	sy = operandToStr( instr.y, instr.yi, addr );
-	sr = operandToStr( instr.r, instr.ri, addr, true );
-	std::cout << sr << " " << sy << " " << sx << "\n";
-};
-
-void Machine::show( int memStart )
-{
-	for ( int i = 0; i < 8; i++ )
-	{
-		if ( i == REG_SP )
-			std::cout << "SP";
-		else if ( i == REG_PC )
-			std::cout << "PC";
-		else if ( i == REG_PSW )
-			std::cout << "PW";
-		else
-			std::cout << "R" << i;
-		std::cout << ":" << std::uppercase << std::hex << std::setw( 4 ) << std::setfill( '0' ) << reg[ i ];
-		//if ( i != 7 )
-			std::cout << "  ";
-	};
-	std::cout << (getFlag( FLAG_OVERFLOW )	? "V" : "-" );
-	std::cout << (getFlag( FLAG_SIGN )	? "S" : "-" );
-	std::cout << (getFlag( FLAG_CARRY )	? "C" : "-" );
-	std::cout << (getFlag( FLAG_ZERO )	? "Z" : "-" );
-	std::cout << "  CLCK " << std::dec << clocks << "\n";
-	if ( memStart >= 0 )
-	{
-		mWord start = memStart;
-		int cols = 8;
-		int rows = 16;
-		for ( int y = 0; y < rows; y++ )
-		{
-			for ( int x = 0; x < cols; x++ )
-			{
-				if ( x )
-					std::cout << "  ";
-				mWord cell = start + y + x * rows;
-				std::cout << std::hex << std::setw( 4 ) << std::setfill( '0' ) << cell  << ":";
-				std::cout << std::hex << std::setw( 4 ) << std::setfill( '0' ) << mem[ cell ];
-			};
-			std::cout << "\n";
-		};
-	}
-}
-
 void Machine::reset()
 {
-	for ( int i = 0; i < 65536; i++ )
-		mem[ i ] = 0;
+    mmu->reset();
 	for ( int i = 0; i < 8; i++ )
 		reg[ i ] = 0;
 	clocks = 0;
 }
 
-mWord Machine::getMem( mWord addr )
+mWord Machine::fetchPC()
 {
-	clocks++;
-	//std::cout << "get mem " << addr << "\n";
-	if ( addr < PORT_START )
-	{
-		return mem[ addr ];
-	}
-	if ( addr == PORT_CONSOLE )
-	{
-        // undefined realization...
-	}
-	return 0;
-};
+    return getMem( reg[ REG_PC ]++ );
+}
 
-void Machine::setMem( mWord addr, mWord data )
-{
-	clocks++;
-	//std::cout << "set mem " << addr << "\n";
-	if ( addr < PORT_START )
-	{
-		mem[ addr ] = data;
-	}
-	else
-	{
-		if ( addr == PORT_CONSOLE )
-		{
-			std::cout << static_cast< char >( data );
-		}
-	}
-};
-
-mWord Machine::read( mTag r, mTag i )
+mWord Machine::readArg( mTag r, mTag i )
 {
 	if ( i )
 	{
 		mWord addr;
 		if ( r == REG_PSW )
-			addr = fetch();
+            addr = fetchPC();
 		else
 			addr = reg[ r ];
 		if ( (r == REG_PC) || (r == REG_SP) )
@@ -190,7 +45,7 @@ void Machine::step()
 {
 	mWord cond;
 	// fetch & decode instruction
-	instr.decode( fetch() );
+    instr.decode( fetchPC() );
 
 	// read x
 	if ( instr.isInplaceImmediate( instr.cmd ) )
@@ -202,9 +57,9 @@ void Machine::step()
 	}
 	else
 	{
-		x = read( instr.x, instr.xi );
+        x = readArg( instr.x, instr.xi );
 	}
-	y = read( instr.y, instr.yi );
+    y = readArg( instr.y, instr.yi );
 
 	// ALU
 	tmp = 0;
@@ -291,7 +146,7 @@ void Machine::step()
 			if ( instr.r == REG_SP )
 				reg[ instr.r ]--;
 			if ( instr.r == REG_PSW )
-				addr = fetch();
+                addr = fetchPC();
 			else
 				addr = reg[ instr.r ];
 			//std::cout << "addr:" << addr << " writ:" << a << "\n";

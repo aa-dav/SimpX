@@ -41,24 +41,24 @@ const int IND_PC	=	6 + 8;
 const int IMMED		=	6 + 8;
 const int IND_IMMED	=	7 + 8;
 
-const int FLAG_ZERO	=	0;
-const int FLAG_CARRY	=	1;
-const int FLAG_SIGN	=	2;
-const int FLAG_OVERFLOW	=	3;
-const int FLAG_IRQ_ENABLE = 	15;
+const int FLAG_ZERO         =	0;
+const int FLAG_CARRY        =	1;
+const int FLAG_SIGN         =	2;
+const int FLAG_OVERFLOW     =	3;
+const int FLAG_IRQ_ENABLE   = 	15;
 
-const int COND_ZERO		=	0;
+const int COND_ZERO         =	0;
 const int COND_NZERO		=	1;
 const int COND_CARRY		=	2;
 const int COND_NCARRY		=	3;
-const int COND_SIGN		=	4;
+const int COND_SIGN         =	4;
 const int COND_NSIGN		=	5;
 const int COND_OVERFLOW		=	6;
 const int COND_NOVERFLOW	=	7;
 const int COND_ABOVE		=	8; // (C==0) && (Z==0) above
 const int COND_BELOW_EQ		=	9; // (C==1) || (Z==1) below or equal
 const int COND_GREATER_EQ	=	10; // S==O
-const int COND_LESS		=	11; // S!=O
+const int COND_LESS         =	11; // S!=O
 const int COND_GREATER		=	12; // (Z==0) && (S==O)
 const int COND_LESS_EQ		=	13; // (Z==1) || (N!=V)
 
@@ -76,9 +76,6 @@ const int OP_OR		=	0x0A;
 const int OP_XOR	=	0x0B;
 const int OP_CADD	=	0x0C;
 const int OP_RRC	=	0x0D;
-
-const int PORT_CONSOLE	=	0xFFFF;
-const int PORT_START	=	0xFFFF;
 
 struct Instruction
 {
@@ -110,23 +107,62 @@ struct Instruction
 	static bool isInplaceImmediate( mTag cmd );
 };
 
+class MMU
+{
+public:
+    virtual void reset() = 0;
+    virtual mWord read( mWord addr ) = 0;
+    virtual void write( mWord addr, mWord data ) = 0;
+    virtual mWord *getPtr( uint32_t addr ) = 0;
+};
+
+class MMU64: public MMU
+{
+private:
+    mWord mem[ 65536 ];
+public:
+    void reset() override
+    {
+        for ( int i = 0; i < 65536; i++ )
+            mem[ i ] = 0;
+    }
+    mWord read( mWord addr ) override
+    {
+        return mem[ addr ];
+    }
+    void write( mWord addr, mWord data ) override
+    {
+        mem[ addr ] = data;
+    };
+    mWord *getPtr( uint32_t addr ) override
+    {
+        return mem + addr;
+    };
+};
+
 class Machine
 {
 private:
-	mWord		mem[ 65536 ];
+    MMU *mmu = nullptr;
 	mWord		reg[ 8 ];
 	Instruction	instr;
 	mWord		x, y, a;
 	uint32_t	tmp;
 	uint64_t	clocks;
 
-	mWord getMem( mWord addr );
-	void setMem( mWord addr, mWord data );
-	mWord fetch() 
-	{ 
-		return getMem( reg[ REG_PC ]++ );
-	}
-	bool getFlag( mTag flag ) 
+    mWord getMem( mWord addr )
+    {
+        clocks++;
+        return mmu->read( addr );
+    };
+    void setMem( mWord addr, mWord data )
+    {
+        clocks++;
+        mmu->write( addr, data );
+    };
+    mWord fetchPC();
+    mWord readArg( mTag r, mTag i );
+    bool getFlag( mTag flag )
 	{
 		return (reg[ REG_PSW ] & (1 << flag)) != 0;
 	}
@@ -155,35 +191,24 @@ private:
 		else
 			setFlag( FLAG_OVERFLOW, (!ys && !xs && as) || (ys && xs && !as) );
 	}
-	mWord read( mTag r, mTag i );
 
 public:
-	Machine()
+    Machine( MMU *mmu )
 	{
+        this->mmu = mmu;
 		reset();
 	}
-
 	mWord currentOp()
 	{
-		return mem[ reg[ REG_PC ] ];
+        return mmu->read( reg[ REG_PC ] );
 	}
 	mWord getPC()
 	{
 		return reg[ REG_PC ];
 	}
-    mWord *getMem()
-    {
-        return mem;
-    }
 
 	void reset();
 	void step();
-
-    void show( int memStart );
-	std::string operandToStr( mTag r, mTag i, int &addr, bool result = false );
-	void showDisasm( int addr );
-
-	friend class Assembler;
 };
 
 }	// namespace Simpleton

@@ -19,7 +19,8 @@ class MainWindow : public QMainWindow
 
     QLabel *statusLabel = nullptr;
     FpsMeter fps;
-    Simpleton::Machine simp4;
+    Simpleton::MMU64 mmu;
+    Simpleton::Machine simp;
     Simpleton::Assembler asm4;
     bool run = false;
 

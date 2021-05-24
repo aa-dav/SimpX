@@ -16,6 +16,7 @@ SOURCES += \
     simpglwidget.cpp \
     simpleton4.cpp \
     simpleton4asm.cpp \
+    simpleton4disasm.cpp \
     utils.cpp
 
 HEADERS += \
@@ -23,6 +24,7 @@ HEADERS += \
     simpglwidget.h \
     simpleton4.h \
     simpleton4asm.h \
+    simpleton4disasm.h \
     utils.h
 
 FORMS += \
