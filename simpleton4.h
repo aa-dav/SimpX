@@ -143,7 +143,7 @@ public:
 class Machine
 {
 private:
-    MMU *mmu = nullptr;
+    MMU         &mmu;
 	mWord		reg[ 8 ];
 	Instruction	instr;
 	mWord		x, y, a;
@@ -153,12 +153,12 @@ private:
     mWord getMem( mWord addr )
     {
         clocks++;
-        return mmu->read( addr );
+        return mmu.read( addr );
     };
     void setMem( mWord addr, mWord data )
     {
         clocks++;
-        mmu->write( addr, data );
+        mmu.write( addr, data );
     };
     mWord fetchPC();
     mWord readArg( mTag r, mTag i );
@@ -173,40 +173,15 @@ private:
 		else
 			reg[ REG_PSW ] &= ~(1 << flag);
 	}
-	void mathTempApply()
-	{
-		a = tmp & 0xFFFF;
-		setFlag( FLAG_CARRY, (tmp & 0x10000) != 0 );
-		setFlag( FLAG_ZERO, (a == 0) );
-		setFlag( FLAG_SIGN, (a & 0x8000) != 0 );
-		setFlag( FLAG_OVERFLOW, false ); // ?
-	}
-	void mathOverflow( bool sub )
-	{
-		bool ys = (y & 0x8000) != 0;
-		bool xs = (x & 0x8000) != 0;
-		bool as = (a & 0x8000) != 0;
-		if ( sub )
-			setFlag( FLAG_OVERFLOW, (!ys && xs && as) || (ys && !xs && !as) );
-		else
-			setFlag( FLAG_OVERFLOW, (!ys && !xs && as) || (ys && xs && !as) );
-	}
+    void mathTempApply();
+    void mathOverflow( bool sub );
 
 public:
-    Machine( MMU *mmu )
+    Machine( MMU &_mmu ): mmu( _mmu )
 	{
-        this->mmu = mmu;
 		reset();
 	}
-	mWord currentOp()
-	{
-        return mmu->read( reg[ REG_PC ] );
-	}
-	mWord getPC()
-	{
-		return reg[ REG_PC ];
-	}
-
+    uint64_t getClocks() { return clocks; };
 	void reset();
 	void step();
 };

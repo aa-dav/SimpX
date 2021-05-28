@@ -94,7 +94,7 @@ void Assembler::parseEnd()
 			int offs = (fwd.node.getValue() & 0xFFFF) - fwd.addr - 1;
 			if ( (offs < -2048) || (offs > 2047) )
 				throw ParseError( fwd.getLine(), "conditional jump offset is too big (" + std::to_string( offs ) + ")!" );
-            mmu->write( fwd.addr, mmu->read( fwd.addr ) | (offs & 0x0FFF) );
+            mmu.write( fwd.addr, mmu.read( fwd.addr ) | (offs & 0x0FFF) );
 		}
 		else if ( fwd.type == ForwardReference::InplaceImm )
 		{
@@ -102,7 +102,7 @@ void Assembler::parseEnd()
 		}
 		else
 		{
-            mmu->write( fwd.addr, fwd.node.getValue() );
+            mmu.write( fwd.addr, fwd.node.getValue() );
 		}
 	};
 }

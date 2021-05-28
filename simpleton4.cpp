@@ -11,7 +11,7 @@ namespace Simpleton
 
 void Machine::reset()
 {
-    mmu->reset();
+    mmu.reset();
 	for ( int i = 0; i < 8; i++ )
 		reg[ i ] = 0;
 	clocks = 0;
@@ -41,22 +41,42 @@ mWord Machine::readArg( mTag r, mTag i )
 	}
 }
 
+void Machine::mathTempApply()
+{
+    a = tmp & 0xFFFF;
+    setFlag( FLAG_CARRY, (tmp & 0x10000) != 0 );
+    setFlag( FLAG_ZERO, (a == 0) );
+    setFlag( FLAG_SIGN, (a & 0x8000) != 0 );
+    setFlag( FLAG_OVERFLOW, false ); // ?
+}
+
+void Machine::mathOverflow(bool sub)
+{
+    bool ys = (y & 0x8000) != 0;
+    bool xs = (x & 0x8000) != 0;
+    bool as = (a & 0x8000) != 0;
+    if ( sub )
+        setFlag( FLAG_OVERFLOW, (!ys && xs && as) || (ys && !xs && !as) );
+    else
+        setFlag( FLAG_OVERFLOW, (!ys && !xs && as) || (ys && xs && !as) );
+}
+
 void Machine::step()
 {
-	mWord cond;
-	// fetch & decode instruction
+    mWord cond;
+    // fetch & decode instruction
     instr.decode( fetchPC() );
 
-	// read x
-	if ( instr.isInplaceImmediate( instr.cmd ) )
-	{
-		if ( instr.xi )
-			x = 0xFFF8 | instr.x;
-		else
-			x = instr.x;
-	}
-	else
-	{
+    // read x
+    if ( instr.isInplaceImmediate( instr.cmd ) )
+    {
+        if ( instr.xi )
+            x = 0xFFF8 | instr.x;
+        else
+            x = instr.x;
+    }
+    else
+    {
         x = readArg( instr.x, instr.xi );
 	}
     y = readArg( instr.y, instr.yi );

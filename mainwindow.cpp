@@ -11,10 +11,22 @@ static QString appName = "SimpX";
 
 #define INIT_SETTINGS( name ) QSettings name( QSettings::IniFormat, QSettings::UserScope, orgName, appName )
 
+void MainWindow::setViewSize(int coef)
+{
+    ui->centralwidget->setFixedSize( 256 * coef, 192 * coef );
+    adjustSize();
+    ui->centralwidget->setMinimumSize( 0, 0 );
+    ui->centralwidget->setMaximumSize( 16777215, 16777215 );
+    //adjustSize();
+    //ui->glWidget->setFixedSize( 256 * coef, 192 * coef );
+    //ui->centralwidget->setGeometry( 0, 0, 256 * coef, 192 * coef );
+    //ui->centralwidget->setFixedSize( 256 * coef, 192 * coef );
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , simp( &mmu )
-    , asm4( &mmu )
+    , simp( mmu )
+    , asm4( mmu )
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -31,6 +43,11 @@ MainWindow::MainWindow(QWidget *parent)
     if ( val.isValid() )
         restoreState( val.toByteArray() );
     sett.endGroup();
+
+    // make
+    uint16_t *ptr = mmu.getPtr( 0 );
+    for ( int i = 0; i < 65536; i++ )
+        ptr[ i ] = rand() % 0xFFFF;
 }
 
 MainWindow::~MainWindow()
@@ -53,7 +70,15 @@ void MainWindow::on_Timer()
         for ( int i =0; i < 1000; i++ )
             simp.step();
     }
-    ui->glWidget->setScreen( mmu.getPtr( 32768 ) );
+    // 0x8000
+    // 0xA000
+    // 0xC000
+    // 0xE000
+    static int sx = 0, sy = 0;
+    ui->glWidget->setScrolls( sx++, sy++ );
+    ui->glWidget->setPalette( mmu.getPtr( 0xA400 ) );
+    ui->glWidget->setBitmap( mmu.getPtr( 0xC000 ) );
+    ui->glWidget->setCharmap( mmu.getPtr( 0xA000 ) );
     ui->glWidget->update();
 }
 
@@ -80,4 +105,19 @@ void MainWindow::on_actionOpen_triggered()
         else
             run = true;
     }
+}
+
+void MainWindow::on_actionView200_triggered()
+{
+    setViewSize( 2 );
+}
+
+void MainWindow::on_actionView300_triggered()
+{
+    setViewSize( 3 );
+}
+
+void MainWindow::on_actionView400_triggered()
+{
+    setViewSize( 4 );
 }

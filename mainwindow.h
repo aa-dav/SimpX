@@ -24,6 +24,8 @@ class MainWindow : public QMainWindow
     Simpleton::Assembler asm4;
     bool run = false;
 
+    void setViewSize( int coef );
+
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -33,6 +35,12 @@ private slots:
     void on_actionQuit_triggered();
 
     void on_actionOpen_triggered();
+
+    void on_actionView200_triggered();
+
+    void on_actionView300_triggered();
+
+    void on_actionView400_triggered();
 
 private:
     Ui::MainWindow *ui;
