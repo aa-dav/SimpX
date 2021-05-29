@@ -41,7 +41,7 @@ static const char *fragSrc =
     "   ivec2 bmp_nxy = ivec2( bmp_xy.x / 4, bmp_xy.y ); \n"
     "   int   inpx    = bmp_xy.x % 4; \n"
     "   int   pix_d   = int( texelFetch( u_bitmap, bmp_nxy, 0 ).r ); \n"
-    "   int   pal_idx = pal_hi | ((pix_d >> (inpx * 4)) & 0xF); \n"
+    "   int   pal_idx = pal_hi + ((pix_d >> (inpx * 4)) & 0xF); \n"
     "   int   pal_d   = int( texelFetch( u_palette, ivec2( pal_idx, 0 ), 0 ).r ); \n"
     "   color = vec3( float((pal_d >> 10) & 0x1F) / 32.0, \n"
     "                 float((pal_d >> 5)  & 0x1F) / 32.0, \n"

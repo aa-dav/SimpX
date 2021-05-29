@@ -17,6 +17,7 @@ SOURCES += \
     simpleton4.cpp \
     simpleton4asm.cpp \
     simpleton4disasm.cpp \
+    simpxmmu.cpp \
     utils.cpp
 
 HEADERS += \
@@ -25,6 +26,7 @@ HEADERS += \
     simpleton4.h \
     simpleton4asm.h \
     simpleton4disasm.h \
+    simpxmmu.h \
     utils.h
 
 FORMS += \
@@ -39,4 +41,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    README.md
+    README.md \
+    asm/simpx.inc \
+    asm/test0.asm

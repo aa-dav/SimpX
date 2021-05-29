@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "simpleton4.h"
 #include "simpleton4asm.h"
+#include "simpxmmu.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,9 +18,10 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    QString lastOpenDir;
     QLabel *statusLabel = nullptr;
     FpsMeter fps;
-    Simpleton::MMU64 mmu;
+    Simpleton::SimpXMMU mmu;
     Simpleton::Machine simp;
     Simpleton::Assembler asm4;
     bool run = false;

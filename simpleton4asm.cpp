@@ -326,9 +326,7 @@ void Assembler::putBackLexem()
 
 static bool lexemIsNumberLiteral( const std::string &lexem  )
 {
-	if ( lexem == "-c" )
-		return false;
-	return (lexem[ 0 ] == '$') || isdigit( lexem[ 0 ] ) || ( (lexem[ 0 ] == '-') && (lexem.size() > 1) );
+    return (lexem[ 0 ] == '$') || isdigit( lexem[ 0 ] ) || ( (lexem[ 0 ] == '-') && (lexem.size() > 1) && (isdigit( lexem[ 1 ] )) );
 }
 
 static int parseNumberLiteral( const std::string &lexem )
@@ -337,7 +335,16 @@ static int parseNumberLiteral( const std::string &lexem )
 	if ( lexem[ 0 ] == '$' )
 		res = strtol( lexem.c_str() + 1, nullptr, 16 );
 	else
-		res = strtol( lexem.c_str(), nullptr, 10 );
+    {
+        if ( lexem[ lexem.length() - 1 ] == 'b' )
+        {
+            res = strtol( lexem.c_str(), nullptr, 2 );
+        }
+        else
+        {
+            res = strtol( lexem.c_str(), nullptr, 10 );
+        }
+    }
 	return res;
 }
 
@@ -815,6 +822,25 @@ void Assembler::parseLine()
 
 }
 
+static std::string getFilePath( const std::string &fileName )
+{
+    std::string res;
+    if ( !fileName.empty() )
+    {
+        auto it = fileName.end() - 1;
+        while ( it != fileName.begin() )
+        {
+            if ( (*it == '\\') || (*it == '/') )
+            {
+                res = fileName.substr( 0, it - fileName.begin() + 1 );
+                        break;
+            }
+            it--;
+        }
+    }
+    return res;
+}
+
 void Assembler::preProcessFile( const std::string &fileName )
 {
 	std::string line;
@@ -839,7 +865,8 @@ void Assembler::preProcessFile( const std::string &fileName )
 					throw PreProcessorError( fileNum, innerLineNum, "#include directive must has one string parameter!" );
 				if ( lexems[ 1 ][ 0 ] != '"' )
 					throw PreProcessorError( fileNum, innerLineNum, "#include directive parameter must be quoted string!" );
-				preProcessFile( &lexems[ 1 ][ 1 ] );
+                std::string fn = getFilePath( fileName ) + &lexems[ 1 ][ 1 ];
+                preProcessFile( fn );
 			}
 			else
 			{

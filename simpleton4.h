@@ -110,6 +110,7 @@ struct Instruction
 class MMU
 {
 public:
+    virtual ~MMU() {};
     virtual void reset() = 0;
     virtual mWord read( mWord addr ) = 0;
     virtual void write( mWord addr, mWord data ) = 0;
