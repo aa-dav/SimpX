@@ -20,6 +20,7 @@ class SimpGLWidget : public QOpenGLWidget
     GLuint tex_charmap = 0;
     QOpenGLFunctions_3_3_Compatibility gl;
 
+
     uint16_t scroll_x = 0, scroll_y = 0;
     uint16_t *scr_palette = nullptr;
     uint16_t *scr_bitmap = nullptr;

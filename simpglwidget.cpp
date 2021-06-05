@@ -1,52 +1,54 @@
 #include "simpglwidget.h"
 #include <QMessageBox>
 
-static const char *vertSrc =
-    "#version 330\n"
-    "const int vid_width = 256; \n"
-    "const int vid_height = 192; \n"
-    "in vec2 a_vertices; \n"
-    "out vec2 v_pixel; \n"
-    "void main() \n"
-    "{ \n"
-    "   vec2 disp = vec2( (a_vertices.x + 1.0) / 2.0, (1.0 - a_vertices.y) / 2.0 ); \n"
-    "   v_pixel = vec2( mix( 0, vid_width, disp.x ), mix( 0, vid_height, disp.y ) ); \n"
-    "   gl_Position = vec4( a_vertices.x, a_vertices.y, 0.0, 1.0 ); \n"
-    "} \n";
-static const char *fragSrc =
-    "#version 330\n"
-    "const int scr_width = 256; \n"
-    "const int scr_height = 256; \n"
-    "const int char_width = 8; \n"
-    "const int char_height = 8; \n"
-    "const int map_width = scr_width / char_width; \n"
-    "const int map_height = scr_height / char_height; \n"
-    "uniform ivec2 u_scrolls; \n"
-    "uniform usampler2D u_palette; \n"
-    "uniform usampler2D u_bitmap; \n"
-    "uniform usampler2D u_charmap; \n"
-    "in vec2 v_pixel; \n"
-    "out vec3 color; \n"
-    "void main() \n"
-    "{ \n"
-    "   ivec2 pix_xy  = ivec2( ( int( v_pixel.x ) + u_scrolls.x ) % scr_width, \n"
-    "                          ( int( v_pixel.y ) + u_scrolls.y ) % scr_height ); \n"
-    "   ivec2 char_xy = ivec2( pix_xy.x / char_width, pix_xy.y / char_height ); \n"
-    "   ivec2 inch_xy = ivec2( pix_xy.x % char_width, pix_xy.y % char_height ); \n"
-    "   int   char_d  = int( texelFetch( u_charmap, char_xy, 0 ).r ); \n"
-    "   int   pal_hi  = (char_d >> 8) & 0xF0; \n"
-    "         char_d  = char_d & 0x3FF; \n"
-    "   ivec2 bmp_xy  = ivec2( (char_d % map_width) * char_width + inch_xy.x, \n"
-    "                          (char_d / map_height) * char_height + inch_xy.y ); \n"
-    "   ivec2 bmp_nxy = ivec2( bmp_xy.x / 4, bmp_xy.y ); \n"
-    "   int   inpx    = bmp_xy.x % 4; \n"
-    "   int   pix_d   = int( texelFetch( u_bitmap, bmp_nxy, 0 ).r ); \n"
-    "   int   pal_idx = pal_hi + ((pix_d >> (inpx * 4)) & 0xF); \n"
-    "   int   pal_d   = int( texelFetch( u_palette, ivec2( pal_idx, 0 ), 0 ).r ); \n"
-    "   color = vec3( float((pal_d >> 10) & 0x1F) / 32.0, \n"
-    "                 float((pal_d >> 5)  & 0x1F) / 32.0, \n"
-    "                 float((pal_d)       & 0x1F) / 32.0 ); \n"
-    "} \n";
+static const char *vertSrc = R"str(
+    #version 330
+    const int vid_width = 256;
+    const int vid_height = 192;
+    in vec2 a_vertices;
+    out vec2 v_pixel;
+    void main()
+    {
+       vec2 disp = vec2( (a_vertices.x + 1.0) / 2.0, (1.0 - a_vertices.y) / 2.0 );
+       v_pixel = vec2( mix( 0, vid_width, disp.x ), mix( 0, vid_height, disp.y ) );
+       gl_Position = vec4( a_vertices.x, a_vertices.y, 0.0, 1.0 );
+    }
+)str";
+static const char *fragSrc = R"str(
+    #version 330
+    const int scr_width = 256;
+    const int scr_height = 256;
+    const int char_width = 8;
+    const int char_height = 8;
+    const int map_width = scr_width / char_width;
+    const int map_height = scr_height / char_height;
+    uniform ivec2 u_scrolls;
+    uniform usampler2D u_palette;
+    uniform usampler2D u_bitmap;
+    uniform usampler2D u_charmap;
+    in vec2 v_pixel;
+    out vec3 color;
+    void main()
+    {
+       ivec2 pix_xy  = ivec2( ( int( v_pixel.x ) + u_scrolls.x ) % scr_width,
+                              ( int( v_pixel.y ) + u_scrolls.y ) % scr_height );
+       ivec2 char_xy = ivec2( pix_xy.x / char_width, pix_xy.y / char_height );
+       ivec2 inch_xy = ivec2( pix_xy.x % char_width, pix_xy.y % char_height );
+       int   char_d  = int( texelFetch( u_charmap, char_xy, 0 ).r );
+       int   pal_hi  = (char_d >> 8) & 0xF0;
+             char_d  = char_d & 0x3FF;
+       ivec2 bmp_xy  = ivec2( (char_d % map_width) * char_width + inch_xy.x,
+                              (char_d / map_height) * char_height + inch_xy.y );
+       ivec2 bmp_nxy = ivec2( bmp_xy.x / 4, bmp_xy.y );
+       int   inpx    = bmp_xy.x % 4;
+       int   pix_d   = int( texelFetch( u_bitmap, bmp_nxy, 0 ).r );
+       int   pal_idx = pal_hi + ((pix_d >> (inpx * 4)) & 0xF);
+       int   pal_d   = int( texelFetch( u_palette, ivec2( pal_idx, 0 ), 0 ).r );
+       color = vec3( float((pal_d >> 10) & 0x1F) / 32.0,
+                     float((pal_d >> 5)  & 0x1F) / 32.0,
+                     float((pal_d)       & 0x1F) / 32.0 );
+    }
+)str";
 
 void SimpGLWidget::set_utex_params( GLuint tex, GLenum slot, int w, int h, uint16_t *ptr )
 {
