@@ -45,6 +45,7 @@ const int FLAG_ZERO         =	0;
 const int FLAG_CARRY        =	1;
 const int FLAG_SIGN         =	2;
 const int FLAG_OVERFLOW     =	3;
+const int FLAG_HALT         = 	14;
 const int FLAG_IRQ_ENABLE   = 	15;
 
 const int COND_ZERO         =	0;
@@ -141,7 +142,7 @@ public:
     };
 };
 
-class Machine
+class CPU
 {
 private:
     MMU         &mmu;
@@ -178,13 +179,14 @@ private:
     void mathOverflow( bool sub );
 
 public:
-    Machine( MMU &_mmu ): mmu( _mmu )
+    CPU( MMU &_mmu ): mmu( _mmu )
 	{
 		reset();
 	}
     uint64_t getClocks() { return clocks; };
 	void reset();
-	void step();
+    int step();
+    int triggerIRQ();
 };
 
 }	// namespace Simpleton

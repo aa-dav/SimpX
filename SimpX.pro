@@ -17,7 +17,7 @@ SOURCES += \
     simpleton4.cpp \
     simpleton4asm.cpp \
     simpleton4disasm.cpp \
-    simpxmmu.cpp \
+    simpx.cpp \
     utils.cpp
 
 HEADERS += \
@@ -26,7 +26,7 @@ HEADERS += \
     simpleton4.h \
     simpleton4asm.h \
     simpleton4disasm.h \
-    simpxmmu.h \
+    simpx.h \
     utils.h
 
 FORMS += \

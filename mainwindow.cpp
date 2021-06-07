@@ -13,10 +13,10 @@ static QString appName = "SimpX";
 
 void MainWindow::setViewSize(int coef)
 {
-    ui->centralwidget->setFixedSize( 256 * coef, 192 * coef );
-    adjustSize();
-    ui->centralwidget->setMinimumSize( 0, 0 );
-    ui->centralwidget->setMaximumSize( 16777215, 16777215 );
+    ui->glWidget->setFixedSize( 256 * coef, 192 * coef );
+    ui->centralwidget->adjustSize();
+    ui->glWidget->setMinimumSize( 0, 0 );
+    ui->glWidget->setMaximumSize( 16777215, 16777215 );
 }
 
 inline uint16_t makeColor( int r, int g, int b )
@@ -26,9 +26,8 @@ inline uint16_t makeColor( int r, int g, int b )
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , mmu( 64 )
-    , simp( mmu )
-    , asm4( mmu )
+    , simp( 64 )
+    , asm4( simp.getMMU() )
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -67,17 +66,12 @@ MainWindow::~MainWindow()
 void MainWindow::on_Timer()
 {
     fps.tick();
-    statusLabel->setText( QStringLiteral( "fps: %1 run: %2" ).arg( fps.getFps() ).arg( run ) );
+    statusLabel->setText( QStringLiteral( "fps: %1, run: %2, clocks: %3" ).arg( fps.getFps() ).arg( run ).arg( simp.getClocks() ) );
     if ( run )
     {
-        for ( int i =0; i < 100; i++ )
-            simp.step();
+        simp.stepFrame();
     }
-    ui->glWidget->setScrolls( mmu.read( mmu.vidScrollX ),
-                              mmu.read( mmu.vidScrollY ) );
-    ui->glWidget->setPalette( mmu.getPalettePtr() );
-    ui->glWidget->setBitmap( mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidBitmapPage ) ) );
-    ui->glWidget->setCharmap( mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidCharmapPage ) + mmu.read( mmu.vidCharmapAddr ) ) );
+    ui->glWidget->setBitmap( simp.getFramePtr() );
     ui->glWidget->update();
 }
 
@@ -96,6 +90,8 @@ void MainWindow::on_actionOpen_triggered()
     if( !filename.isNull() )
     {
         lastOpenDir = QFileInfo( filename ).absolutePath();
+        simp.reset();
+        asm4.reset();
         if ( !asm4.parseFile( filename.toStdString() ) )
         {
             QMessageBox msg;

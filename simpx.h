@@ -1,5 +1,5 @@
-#ifndef SIMP_X_MMU_H
-#define SIMP_X_MMU_H
+#ifndef SIMP_X_H
+#define SIMP_X_H
 
 #include "simpleton4.h"
 #include <vector>
@@ -61,6 +61,27 @@ public:
     mWord *getPtr(uint32_t addr) override;
 };
 
+class SimpX
+{
+    SimpXMMU mmu;
+    CPU cpu;
+    mWord frame[ 256 * 192 ];
+    uint64_t clocks;
+public:
+    SimpX( int _pages ): mmu( _pages ), cpu( mmu ) {}
+    SimpXMMU &getMMU() { return mmu; }
+    CPU &getCPU() { return cpu; }
+    mWord *getFramePtr() { return frame; }
+    uint64_t getClocks() { return clocks; }
+    void stepFrame();;
+    void reset()
+    {
+        mmu.reset();
+        cpu.reset();
+        clocks = 0;
+    };
+};
+
 };  // namespace Simpleton
 
-#endif // SIMPXMMU_H
+#endif // SIMPX_H

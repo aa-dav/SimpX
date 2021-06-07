@@ -3,7 +3,14 @@
                 mode new    ; "математический" режим ассемблера
 
                 sp <- $7FFF ; установим указатель на стек
+                psw <- $8000 ; включим прерывания
                 pc <- start ; переходим на начало
+
+                org $0010   ; IRQ handler
+
+                [ $8000 ] <- [ $8000 ] + 1
+                psw <- [ sp ]
+                pc <- [ sp ]
 
 palette         ; первые 16 слотов палитры, формат RRRRRGGGGGBBBBB
                 dw 000000000000000b
@@ -59,6 +66,7 @@ start
                 r0 <- r0 + 1
                 r2 <- r2 + 1
                 r1 <= r1 - 1
+                ; psw = psw | $4000 ; halt
                 jnz @loop2
 
                 ; зальём битмап увеличивающимися числами
@@ -72,9 +80,7 @@ start
                 jnz @loop1
 
 
-loop_scroll     r0 <- 200
-loop_wait       r0 <= r0 - 1
-                jnz loop_wait
+loop_scroll     psw = psw | $4000
                 ; увеличим координаты скроллинга
                 [ vidScrollX ] = [ vidScrollX ] +s 1
                 [ vidScrollY ] = [ vidScrollY ] +s 1

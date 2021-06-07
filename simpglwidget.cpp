@@ -14,6 +14,8 @@ static const char *vertSrc = R"str(
        gl_Position = vec4( a_vertices.x, a_vertices.y, 0.0, 1.0 );
     }
 )str";
+
+/*
 static const char *fragSrc = R"str(
     #version 330
     const int scr_width = 256;
@@ -49,6 +51,22 @@ static const char *fragSrc = R"str(
                      float((pal_d)       & 0x1F) / 32.0 );
     }
 )str";
+*/
+
+static const char *fragSrc = R"str(
+    #version 330
+    uniform usampler2D u_bitmap;
+    in vec2 v_pixel;
+    out vec3 color;
+    void main()
+    {
+       ivec2 xy = ivec2( int( v_pixel.x ), int( v_pixel.y ) );
+       int   pix   = int( texelFetch( u_bitmap, xy, 0 ).r );
+       color = vec3( float((pix >> 10) & 0x1F) / 32.0,
+                     float((pix >> 5)  & 0x1F) / 32.0,
+                     float((pix)       & 0x1F) / 32.0 );
+    }
+)str";
 
 void SimpGLWidget::set_utex_params( GLuint tex, GLenum slot, int w, int h, uint16_t *ptr )
 {
@@ -82,22 +100,22 @@ void SimpGLWidget::initializeGL()
     res = prg.link();
     if ( !res )
         goto error;
-    u_scrolls   = prg.uniformLocation( "u_scrolls" );
-    u_palette   = prg.uniformLocation( "u_palette" );
+    //u_scrolls   = prg.uniformLocation( "u_scrolls" );
+    //u_palette   = prg.uniformLocation( "u_palette" );
     u_bitmap    = prg.uniformLocation( "u_bitmap" );
-    u_charmap   = prg.uniformLocation( "u_charmap" );
+    //u_charmap   = prg.uniformLocation( "u_charmap" );
     a_vertices  = prg.attributeLocation( "a_vertices" );
 
-    tex_palette = 0;
-    gl.glGenTextures( 1, &tex_palette );
+    //tex_palette = 0;
+    //gl.glGenTextures( 1, &tex_palette );
     tex_bitmap = 0;
     gl.glGenTextures( 1, &tex_bitmap );
-    tex_charmap = 0;
-    gl.glGenTextures( 1, &tex_charmap );
+    //tex_charmap = 0;
+    //gl.glGenTextures( 1, &tex_charmap );
 
-    set_utex_params( tex_palette, GL_TEXTURE0, 256, 1, nullptr );
-    set_utex_params( tex_bitmap, GL_TEXTURE1, 64, 256, nullptr );
-    set_utex_params( tex_charmap, GL_TEXTURE2, 32, 32, nullptr );
+    //set_utex_params( tex_palette, GL_TEXTURE0, 256, 1, nullptr );
+    set_utex_params( tex_bitmap, GL_TEXTURE1, 256, 192, nullptr );
+    //set_utex_params( tex_charmap, GL_TEXTURE2, 32, 32, nullptr );
 
     return; // all is ok
 error:
@@ -106,20 +124,21 @@ error:
     msg.exec();
 }
 
-void SimpGLWidget::setPalette( uint16_t *data )
+/*void SimpGLWidget::setPalette( uint16_t *data )
 {
     scr_palette = data;
-}
+}*/
 
 void SimpGLWidget::setBitmap( uint16_t *data )
 {
     scr_bitmap = data;
 }
 
+/*
 void SimpGLWidget::setCharmap( uint16_t *data )
 {
     scr_charmap = data;
-}
+}*/
 
 void SimpGLWidget::free_texture( GLuint &tex )
 {
@@ -132,9 +151,9 @@ void SimpGLWidget::free_texture( GLuint &tex )
 
 SimpGLWidget::~SimpGLWidget()
 {
-    free_texture( tex_charmap );
+    //free_texture( tex_charmap );
     free_texture( tex_bitmap );
-    free_texture( tex_palette );
+    //free_texture( tex_palette );
 }
 
 void SimpGLWidget::resizeGL(int w, int h)
@@ -160,14 +179,14 @@ void SimpGLWidget::paintGL()
     prg.setAttributeArray( a_vertices, verts, 2 );
 
     //prg.setUniformValue( u_scrolls, QSize( scroll_x, scroll_y ) );
-    gl.glUniform2i( u_scrolls, scroll_x, scroll_y );
+    //gl.glUniform2i( u_scrolls, scroll_x, scroll_y );
 
-    prg.setUniformValue( u_palette, 0 );
-    set_utex_params( tex_palette, GL_TEXTURE0, 256, 1, scr_palette );
+    //prg.setUniformValue( u_palette, 0 );
+    //set_utex_params( tex_palette, GL_TEXTURE0, 256, 1, scr_palette );
     prg.setUniformValue( u_bitmap, 1 );
-    set_utex_params( tex_bitmap, GL_TEXTURE1, 64, 256, scr_bitmap );
-    prg.setUniformValue( u_charmap, 2 );
-    set_utex_params( tex_charmap, GL_TEXTURE2, 32, 32, scr_charmap );
+    set_utex_params( tex_bitmap, GL_TEXTURE1, 256, 192, scr_bitmap );
+    //prg.setUniformValue( u_charmap, 2 );
+    //set_utex_params( tex_charmap, GL_TEXTURE2, 32, 32, scr_charmap );
 
     gl.glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
 

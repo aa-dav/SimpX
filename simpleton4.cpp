@@ -9,7 +9,7 @@ namespace Simpleton
 	return (cmd == OP_ADDI) || (cmd == OP_ADDIS) || (cmd == OP_RRCI);
 }
 
-void Machine::reset()
+void CPU::reset()
 {
     mmu.reset();
 	for ( int i = 0; i < 8; i++ )
@@ -17,12 +17,12 @@ void Machine::reset()
 	clocks = 0;
 }
 
-mWord Machine::fetchPC()
+mWord CPU::fetchPC()
 {
     return getMem( reg[ REG_PC ]++ );
 }
 
-mWord Machine::readArg( mTag r, mTag i )
+mWord CPU::readArg( mTag r, mTag i )
 {
 	if ( i )
 	{
@@ -41,7 +41,7 @@ mWord Machine::readArg( mTag r, mTag i )
 	}
 }
 
-void Machine::mathTempApply()
+void CPU::mathTempApply()
 {
     a = tmp & 0xFFFF;
     setFlag( FLAG_CARRY, (tmp & 0x10000) != 0 );
@@ -50,7 +50,7 @@ void Machine::mathTempApply()
     setFlag( FLAG_OVERFLOW, false ); // ?
 }
 
-void Machine::mathOverflow(bool sub)
+void CPU::mathOverflow(bool sub)
 {
     bool ys = (y & 0x8000) != 0;
     bool xs = (x & 0x8000) != 0;
@@ -61,9 +61,17 @@ void Machine::mathOverflow(bool sub)
         setFlag( FLAG_OVERFLOW, (!ys && !xs && as) || (ys && xs && !as) );
 }
 
-void Machine::step()
+int CPU::step()
 {
     mWord cond;
+
+    if ( getFlag( FLAG_HALT ) )
+    {
+        clocks++;
+        return 1; //
+    }
+    uint64_t start_clocks = clocks;
+
     // fetch & decode instruction
     instr.decode( fetchPC() );
 
@@ -176,7 +184,23 @@ void Machine::step()
 	else
 	{
 		reg[ instr.r ] = a;
-	}
+    }
+    return clocks - start_clocks;
+}
+
+int CPU::triggerIRQ()
+{
+    uint64_t start_clocks = clocks;
+    setFlag( FLAG_HALT, false );
+    if ( getFlag( FLAG_IRQ_ENABLE ) )
+    {
+        // save flags & pc
+        setMem( --reg[ REG_SP ], reg[ REG_PC ] );
+        setMem( --reg[ REG_SP ], reg[ REG_PSW ] );
+        reg[ REG_PC ] = 0x10;
+        clocks++; // 1 clock time
+    }
+    return clocks - start_clocks;
 };
 
 }	// namespace Simpleton
