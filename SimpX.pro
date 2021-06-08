@@ -8,12 +8,12 @@ CONFIG += c++11
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-LIBS += -lopengl32
+# LIBS += -lopengl32
 
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    simpglwidget.cpp \
+    ppuwidget.cpp \
     simpleton4.cpp \
     simpleton4asm.cpp \
     simpleton4disasm.cpp \
@@ -22,7 +22,7 @@ SOURCES += \
 
 HEADERS += \
     mainwindow.h \
-    simpglwidget.h \
+    ppuwidget.h \
     simpleton4.h \
     simpleton4asm.h \
     simpleton4disasm.h \

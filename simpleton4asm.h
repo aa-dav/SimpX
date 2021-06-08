@@ -13,6 +13,20 @@
 namespace Simpleton
 {
 
+class SourceFile
+{
+public:
+    virtual std::string get_line() = 0;
+    virtual void close() = 0;
+    virtual ~SourceFile() {};
+};
+
+class SourceFileProvider
+{
+public:
+    virtual SourceFile *open( const std::string &name ) = 0;
+};
+
 class ParseError
 {
 	std::string reason;
@@ -283,8 +297,9 @@ public:
 
 	void preProcessFile( const std::string &fileName );
 
-	bool parseFile( const std::string &fileName );
-	std::string getErrorMessage() { return errorMessage; };
+    bool parseStrings( const std::vector< std::string > &strings );
+    bool parseFile( const std::string &fileName );
+    std::string getErrorMessage() { return errorMessage; };
 
 };
 

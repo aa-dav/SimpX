@@ -35,6 +35,12 @@
     </property>
     <item>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -44,7 +50,7 @@
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="SimpGLWidget" name="glWidget" native="true"/>
+         <widget class="PPUWidget" name="glWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -52,11 +58,7 @@
        <attribute name="title">
         <string>Tab 2</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <widget class="QWidget" name="widget_2" native="true"/>
-        </item>
-       </layout>
+       <layout class="QHBoxLayout" name="horizontalLayout_3"/>
       </widget>
      </widget>
     </item>
@@ -118,9 +120,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>SimpGLWidget</class>
+   <class>PPUWidget</class>
    <extends>QWidget</extends>
-   <header>simpglwidget.h</header>
+   <header>ppuwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

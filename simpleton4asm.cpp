@@ -1,5 +1,4 @@
 #include "simpleton4asm.h"
-#include <conio.h>
 
 namespace Simpleton
 {
@@ -880,6 +879,11 @@ void Assembler::preProcessFile( const std::string &fileName )
 		}
 	};
 }
+
+bool parseStrings( const std::vector< std::string > &strings )
+{
+    retrn
+};
 
 bool Assembler::parseFile( const std::string &fileName )
 {

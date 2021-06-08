@@ -14,7 +14,10 @@ static QString appName = "SimpX";
 void MainWindow::setViewSize(int coef)
 {
     ui->glWidget->setFixedSize( 256 * coef, 192 * coef );
+    ui->centralwidget->resize( 100, 100 );
     ui->centralwidget->adjustSize();
+    //resize( 100, 100 );
+    adjustSize();
     ui->glWidget->setMinimumSize( 0, 0 );
     ui->glWidget->setMaximumSize( 16777215, 16777215 );
 }
@@ -31,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    //setCentralWidget( ui->glWidget );
     statusLabel = new QLabel();
     ui->statusBar->addWidget( statusLabel );
     connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
