@@ -846,11 +846,14 @@ void Assembler::preProcessFile( const std::string &fileName )
 	int innerLineNum = 0;
 	int fileNum = files.size();
 	files.emplace_back( fileName );
-	std::ifstream ifs( fileName );
-	if ( ifs.fail() )
+    std::shared_ptr< File > ifs;
+    if ( provider )
+        ifs = provider->open( fileName );
+    if ( !ifs )
 		throw PreProcessorError( fileNum - 1, innerLineNum, "cannot open file '" + fileName + "'!" );
-	while ( std::getline( ifs, line ) )
+    while ( !ifs->eof() )
 	{
+        line = ifs->get_line();
 		lineNum++;
 		innerLineNum++;
 		std::vector< std::string > lexems;
@@ -879,11 +882,6 @@ void Assembler::preProcessFile( const std::string &fileName )
 		}
 	};
 }
-
-bool parseStrings( const std::vector< std::string > &strings )
-{
-    retrn
-};
 
 bool Assembler::parseFile( const std::string &fileName )
 {

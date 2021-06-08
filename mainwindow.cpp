@@ -4,10 +4,48 @@
 #include <QDir>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QTextStream>
 
-static QString orgName = "AlxSoft";
-static QString domName = "alxhost.tk";
-static QString appName = "SimpX";
+class FileFromEditor: public Simpleton::File
+{
+    int line = 0;
+    QStringList strs;
+public:
+    FileFromEditor( const QStringList &list ): strs( list ) {};
+
+    // File interface
+public:
+    std::string get_line() override
+    {
+        if ( line < strs.size() )
+            return strs[ line++ ].toStdString();
+        else
+            return std::string();
+    };
+    bool eof() override
+    {
+        return line >= strs.size();
+    };
+};
+
+class FileProviderFromEditor: public Simpleton::FileProvider
+{
+    QPlainTextEdit *source = nullptr;
+public:
+    FileProviderFromEditor( QPlainTextEdit *src ): source( src ) {};
+
+    // FileProvider interface
+public:
+    std::shared_ptr<Simpleton::File> open(const std::string &name) override
+    {
+        QString s = source->toPlainText();
+        return std::make_shared<FileFromEditor>( s.split( '\n' ) );
+    };
+};
+
+static const char* orgName = "AlxSoft";
+static const char* domName = "alxhost.tk";
+static const char* appName = "SimpX";
 
 #define INIT_SETTINGS( name ) QSettings name( QSettings::IniFormat, QSettings::UserScope, orgName, appName )
 
@@ -34,10 +72,14 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    //setCentralWidget( ui->glWidget );
     statusLabel = new QLabel();
     ui->statusBar->addWidget( statusLabel );
     connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
+
+#if BUILD_WEBASSEMBLY == 1
+    asm4.setSourceFileProvider( std::make_shared<FileProviderFromEditor>( ui->fileEdit ) );
+#else
+    asm4.setSourceFileProvider( std::make_shared<Simpleton::FileProviderStd>() );
 
     INIT_SETTINGS( sett );
     sett.beginGroup( "General" );
@@ -51,6 +93,7 @@ MainWindow::MainWindow(QWidget *parent)
     if ( val.isValid() )
         restoreState( val.toByteArray() );
     sett.endGroup();
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -87,6 +130,14 @@ void MainWindow::on_actionQuit_triggered()
 void MainWindow::on_actionOpen_triggered()
 {
     run = false;
+#if BUILD_WEBASSEMBLY == 1
+    QFileDialog::getOpenFileContent(
+        "All files (*.*) ;; Assembler files (*.asm *.inc)",
+        [this](const QString &fname, const QByteArray &arr)
+        {
+            this->ui->fileEdit->setPlainText( QString::fromUtf8( arr ) );
+        } );
+#else
     QString filename =  QFileDialog::getOpenFileName(
               this, "Open asm file", lastOpenDir,
               "All files (*.*) ;; Assembler files (*.asm *.inc)" );
@@ -94,17 +145,15 @@ void MainWindow::on_actionOpen_triggered()
     if( !filename.isNull() )
     {
         lastOpenDir = QFileInfo( filename ).absolutePath();
-        simp.reset();
-        asm4.reset();
-        if ( !asm4.parseFile( filename.toStdString() ) )
-        {
-            QMessageBox msg;
-            msg.setText( asm4.getErrorMessage().c_str() );
-            msg.exec();
-        }
-        else
-            run = true;
+        lastOpenFile = QFileInfo( filename ).absoluteFilePath();
+
+        QFile file( lastOpenFile );
+        file.open( QIODevice::ReadOnly );
+        QTextStream strm( &file );
+        strm.setCodec( "UTF-8" );
+        ui->fileEdit->setPlainText( strm.readAll() );
     }
+#endif
 }
 
 void MainWindow::on_actionView200_triggered()
@@ -120,4 +169,27 @@ void MainWindow::on_actionView300_triggered()
 void MainWindow::on_actionView400_triggered()
 {
     setViewSize( 4 );
+}
+
+void MainWindow::on_actionStop_triggered()
+{
+    run = false;
+}
+
+void MainWindow::on_actionRun_triggered()
+{
+    run = false;
+    simp.reset();
+    asm4.reset();
+    if ( !asm4.parseFile( lastOpenFile.toStdString() ) )
+    {
+        ui->msgEdit->setText( QString::fromStdString( asm4.getErrorMessage() ) );
+        ui->tabWidget->setCurrentIndex( 1 );
+    }
+    else
+    {
+        run = true;
+        ui->msgEdit->setText( "Ok." );
+        ui->tabWidget->setCurrentIndex( 0 );
+    }
 }

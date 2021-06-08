@@ -4,6 +4,8 @@
 #include "simpleton4.h"
 #include <vector>
 
+#define BUILD_WEBASSEMBLY 1
+
 namespace Simpleton
 {
 

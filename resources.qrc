@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/sources">
+        <file>asm/test1.asm</file>
+    </qresource>
+</RCC>

@@ -1,30 +1,63 @@
 #ifndef SIMPLETON_4_ASM_H
 #define SIMPLETON_4_ASM_H
 
-#include <iostream>
-#include <fstream>
-#include <iomanip>
 #include <string>
 #include <map>
 #include <vector>
 #include <memory>
+#include <fstream>
 #include "simpleton4.h"
 
 namespace Simpleton
 {
 
-class SourceFile
+class File
 {
 public:
     virtual std::string get_line() = 0;
-    virtual void close() = 0;
-    virtual ~SourceFile() {};
+    virtual bool eof() = 0;
+    virtual ~File() {};
 };
 
-class SourceFileProvider
+class FileProvider
 {
 public:
-    virtual SourceFile *open( const std::string &name ) = 0;
+    virtual std::shared_ptr< File > open( const std::string &name ) = 0;
+    virtual ~FileProvider() {};
+};
+
+class FileStd: public File
+{
+    std::ifstream ifs;
+public:
+    FileStd( const std::string &fname ): ifs( fname, std::ios::in | std::ios::binary ) {};
+
+    std::string get_line() override
+    {
+        std::string ret;
+        std::getline( ifs, ret );
+        return ret;
+    };
+    bool eof() override
+    {
+        return ifs.eof();
+    };
+    bool fail()
+    {
+        return ifs.fail();
+    };
+};
+
+class FileProviderStd: public FileProvider
+{
+public:
+    std::shared_ptr<File> open(const std::string &name) override
+    {
+        std::shared_ptr< FileStd > ret = std::make_shared< FileStd >( name );
+        if ( ret->fail() )
+            ret.reset();
+        return ret;
+    };
 };
 
 class ParseError
@@ -71,6 +104,8 @@ private:
 	};
 	std::vector< SourceFile > files;
 	std::vector< SourceLine > lines;
+
+    std::shared_ptr< FileProvider > provider;
 
 	class Identifier;
 
@@ -297,9 +332,9 @@ public:
 
 	void preProcessFile( const std::string &fileName );
 
-    bool parseStrings( const std::vector< std::string > &strings );
     bool parseFile( const std::string &fileName );
     std::string getErrorMessage() { return errorMessage; };
+    void setSourceFileProvider( const std::shared_ptr< FileProvider > _provider ) { provider = _provider; };
 
 };
 

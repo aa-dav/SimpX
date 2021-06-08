@@ -44,3 +44,5 @@ DISTFILES += \
     README.md \
     asm/simpx.inc \
     asm/test0.asm
+
+RESOURCES +=

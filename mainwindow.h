@@ -24,6 +24,7 @@ class MainWindow : public QMainWindow
     Simpleton::SimpX simp;
     Simpleton::Assembler asm4;
     bool run = false;
+    QString lastOpenFile;
 
     void setViewSize( int coef );
 
@@ -42,6 +43,10 @@ private slots:
     void on_actionView300_triggered();
 
     void on_actionView400_triggered();
+
+    void on_actionStop_triggered();
+
+    void on_actionRun_triggered();
 
 private:
     Ui::MainWindow *ui;

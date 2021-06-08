@@ -2,7 +2,6 @@
 #define SIMPLETON_4_H
 
 #include <iostream>
-#include <fstream>
 #include <iomanip>
 #include <string>
 #include <map>
