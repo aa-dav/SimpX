@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>asm/simpx.inc</file>
+        <file>asm/test0.asm</file>
+    </qresource>
+</RCC>

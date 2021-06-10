@@ -143,10 +143,8 @@ bool Assembler::ExprNode::resolve( Assembler &assembler )
 		{
 			value = iden->getValue();
 			type = ExprNode::Literal;
-			//std::cout << "at line " << lineNum << " resolved " << name << " to " << value << "\n";
 			return true;
 		}	        
-		//std::cout << "calculated symbol " << name << " to  " << value << "\n";
 		return false;
 	}
 	else
@@ -218,7 +216,6 @@ void Assembler::resolveForwards()
 		if ( !changed )
 			break;
 	}
-	//std::cout << "tries to resolve: " << tries << "\n";
 }
 
 static bool isTerminal( char c )
@@ -535,7 +532,6 @@ void Assembler::parseLine()
 		if ( findIdentifier( curLabel, newSyntax ) != nullptr )
 			throw ParseError( lineNum, "identifier " + curLabel + " is redefined!" );
 		identifiers.emplace_back( curLabel, Identifier::Symbol, org, Identifier::AsmBoth );
-		//std::cout << "New identif added: " << curLabel << "\n";
 	}
 	std::string lexem;
 	bool first = true;
@@ -847,10 +843,11 @@ void Assembler::preProcessFile( const std::string &fileName )
 	int fileNum = files.size();
 	files.emplace_back( fileName );
     std::shared_ptr< File > ifs;
-    if ( provider )
-        ifs = provider->open( fileName );
+    if ( !provider )
+        throw PreProcessorError( fileNum - 1, innerLineNum, "File provider is not set!" );
+    ifs = provider->open( fileName );
     if ( !ifs )
-		throw PreProcessorError( fileNum - 1, innerLineNum, "cannot open file '" + fileName + "'!" );
+        throw PreProcessorError( fileNum - 1, innerLineNum, "Cannot open file '" + fileName + "'!" );
     while ( !ifs->eof() )
 	{
         line = ifs->get_line();
@@ -885,6 +882,7 @@ void Assembler::preProcessFile( const std::string &fileName )
 
 bool Assembler::parseFile( const std::string &fileName )
 {
+    bool ret = true;
 	try
 	{
 		lineNum = 0;
@@ -930,11 +928,13 @@ bool Assembler::parseFile( const std::string &fileName )
 		}
 		parseEnd();
 		// Dump identifiers...
+        /*
 		for ( auto &i : identifiers )
 		{
 			if ( i.type == Identifier::Symbol )
 				std::cout << "Symbol: " << i.name << " value: " << i.getValue() << "\n";
 		}
+        */
 	}
 	catch ( const Simpleton::PreProcessorError &error )
 	{
@@ -943,7 +943,7 @@ bool Assembler::parseFile( const std::string &fileName )
 		if ( error.getFile() >= 0 )
 			fname = files[ error.getFile() ].name;
         errorMessage = std::string( "Preprocessor error at file '" ) + fname + "' line " + std::to_string( errorLine ) + " Reason: " + error.getReason();
-		return false;
+        ret = false;
 	}
 	catch ( const Simpleton::ParseError &error )
 	{
@@ -959,14 +959,14 @@ bool Assembler::parseFile( const std::string &fileName )
 			file = files[ line.file ];
 		
 		errorMessage = std::string( "Parse error at file '" ) + file.name + "' line " + std::to_string( line.num ) + " Reason: " + error.getReason();
-		return false;
+        ret = false;
 	}
 	catch ( const std::exception &error )
 	{
 		errorMessage = std::string( "Unknown error: " ) + error.what();
-		return false;
+        ret = false;
 	}
-	return true;
+    return ret;
 };
 
 }	// namespace Simpleton

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+    <section name="Keyword">
+        <name>mode</name>
+        <name>dw</name>
+        <name>ds</name>
+        <name>org</name>
+    </section>
+    <section name="Operator">
+        <name>&lt;\-</name>
+        <name>&lt;\=</name>
+        <name>=</name>
+        <name>\+s</name>
+        <name>\+</name>
+        <name>\+c</name>
+        <name>\-</name>
+        <name>\-c</name>
+        <name>\|</name>
+        <name>&amp;</name>
+        <name>\^</name>
+        <name>\+\?</name>
+        <name>&lt;&lt;</name>
+    </section>
+    <section name="PrimitiveType">
+        <name>r0</name>
+        <name>r1</name>
+        <name>r2</name>
+        <name>r3</name>
+        <name>r4</name>
+        <name>r5</name>
+        <name>r6</name>
+        <name>r7</name>
+        <name>pc</name>
+        <name>psw</name>
+        <name>sp</name>
+        <name>void</name>
+        <name>call</name>
+        <name>ret</name>
+        <name>jz</name>
+        <name>jnz</name>
+        <name>jc</name>
+        <name>jnc</name>
+        <name>js</name>
+        <name>jns</name>
+        <name>jo</name>
+        <name>jno</name>
+        <name>ja</name>
+        <name>jbe</name>
+        <name>jge</name>
+        <name>jl</name>
+        <name>jg</name>
+        <name>jle</name>
+    </section>
+</root>

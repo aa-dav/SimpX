@@ -3,7 +3,9 @@
 
 #include "simpleton4.h"
 #include <vector>
+#include <QImage>
 
+#define PPU_SOFT_RENDER 1
 #define BUILD_WEBASSEMBLY 1
 
 namespace Simpleton
@@ -15,7 +17,8 @@ private:
     unsigned int pagesCount;
     std::vector< mWord > mem;
     mWord pages[ 8 ];
-    mWord palette[ 256 ];
+    mWord pal16[ 256 ];
+    uint32_t pal32[ 256 ];
 
     // MMU interface
 public:
@@ -31,9 +34,15 @@ public:
     }
     mWord &getMem( mWord addr )
     {
-        return mem[ (pages[ getPageNum( addr ) ] << bitsInAddr) | (addr & addrMask) ];
+        size_t idx = (pages[ getPageNum( addr ) ] << bitsInAddr) | (addr & addrMask);
+        if ( idx >= mem.size() )
+        {
+            return mem[ 0 ];
+        }
+        return mem[ idx ];
     }
-    mWord *getPalettePtr() { return palette; };
+    const mWord    *getPalPtr16() { return pal16; };
+    const uint32_t *getPalPtr32() { return pal32; };
 
     static const mWord portStart        = 0xFFE0;
     // Video IO ports
@@ -67,15 +76,13 @@ class SimpX
 {
     SimpXMMU mmu;
     CPU cpu;
-    mWord frame[ 256 * 192 ];
     uint64_t clocks;
 public:
     SimpX( int _pages ): mmu( _pages ), cpu( mmu ) {}
     SimpXMMU &getMMU() { return mmu; }
     CPU &getCPU() { return cpu; }
-    mWord *getFramePtr() { return frame; }
     uint64_t getClocks() { return clocks; }
-    void stepFrame();;
+    void stepFrame( mWord *buf16, uint32_t *buf32 );;
     void reset()
     {
         mmu.reset();

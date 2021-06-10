@@ -6,8 +6,9 @@
 #include <QPainter>
 
 PPUWidget::PPUWidget(QWidget *parent) : QWidget(parent),
-    image( 256, 192, QImage::Format_RGB555 )
+    image( 256, 192, QImage::Format_RGB32 )
 {
+    setAttribute( Qt::WA_OpaquePaintEvent, true );
 }
 
 
@@ -18,11 +19,6 @@ void PPUWidget::paintEvent(QPaintEvent */*event*/)
     QRect rectTo = { 0, 0, width(), height() };
     painter.drawImage( rectTo, image, rectFrom );
     emit painted();
-}
-
-void PPUWidget::setBitmap( uint16_t *data )
-{
-    memcpy( image.bits(), data, 256 * 192 * 2 );
 }
 
 #else
@@ -102,12 +98,6 @@ error:
     msg.exec();
 }
 
-void PPUWidget::setBitmap( uint16_t *data )
-{
-    if ( tex_bitmap )
-        set_utex_params( tex_bitmap, GL_TEXTURE0, 256, 192, data );
-}
-
 void PPUWidget::free_texture( GLuint &tex )
 {
     if ( tex != 0 )
@@ -140,6 +130,10 @@ void PPUWidget::paintGL()
         -1.0f, -1.0f,
         +1.0f, -1.0f
     };
+
+    if ( tex_bitmap )
+        set_utex_params( tex_bitmap, GL_TEXTURE0, 256, 192, (uint16_t*) image.bits() );
+
     prg.bind();
     prg.enableAttributeArray( a_vertices );
     prg.setAttributeArray( a_vertices, verts, 2 );

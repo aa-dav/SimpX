@@ -5,7 +5,7 @@
 
 class FpsMeter
 {
-    static const int measureSize = 20;
+    static const int measureSize = 60;
     QElapsedTimer timer;
     unsigned int fps = 0;
     int curMeasure = 0;

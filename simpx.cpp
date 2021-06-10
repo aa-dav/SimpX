@@ -8,7 +8,10 @@ void Simpleton::SimpXMMU::reset()
     for ( int i = 0; i < 8; i++ )
         pages[ i ] = i;
     for ( int i = 0; i < 256; i++ )
-        palette[ i ] = 0;
+    {
+        pal16[ i ] = 0;
+        pal32[ i ] = 0;
+    }
     for ( unsigned int i = 0; i < pagesCount * pageSize; i++ )
         mem[ i ] = 0;
 }
@@ -23,7 +26,7 @@ mWord Simpleton::SimpXMMU::read(mWord addr)
         }
         else if ( addr == vidPalData )
         {
-            return palette[ mem[ vidPalPtr ] & 0xFF ];
+            return pal16[ mem[ vidPalPtr ] & 0xFF ];;
         }
         {
             return mem[ addr ]; // direct read
@@ -45,7 +48,8 @@ void Simpleton::SimpXMMU::write(mWord addr, mWord data)
         }
         else if ( addr == vidPalData )
         {
-            palette[ mem[ vidPalPtr ] & 0xFF ] = data;
+            pal16[ mem[ vidPalPtr ] & 0xFF ] = data;
+            pal32[ mem[ vidPalPtr ] & 0xFF ] = ((data << 9) & 0xF80000) | ((data << 6) & 0xF800) | ((data << 3) & 0xF8);
         }
         else
             mem[ addr ] = data; // direct write
@@ -61,13 +65,14 @@ mWord *Simpleton::SimpXMMU::getPtr(uint32_t addr)
     return &mem[ addr ];
 }
 
-void SimpX::stepFrame()
+void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
 {
-    mWord *pal = mmu.getPalettePtr();
+    const mWord       *pal16 = mmu.getPalPtr16();
+    const uint32_t    *pal32 = mmu.getPalPtr32();
+    bool need_draw = (pal16 != nullptr) || (pal32 != nullptr);
     mWord *bitmap = mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidBitmapPage ) );
     mWord *charmap = mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidCharmapPage ) + mmu.read( mmu.vidCharmapAddr ) );
 
-    int pix_out = 0;
     int scroll_x = mmu.read( mmu.vidScrollX ) & 0xFF;
     int scroll_y = mmu.read( mmu.vidScrollY ) & 0xFF;
 
@@ -85,13 +90,20 @@ void SimpX::stepFrame()
             cpu.step();
         if ( scan_col < 256 )
         {
-            int char_idx = ((pix_addr & 0xF800) >> 6) | ((pix_addr & 0xF8) >> 3);
-            int char_dat = charmap[ char_idx ];
-            int pal_high = (char_dat & 0xF000) >> 8;
-            int pix_idx = (((char_dat << 6) & 0xF800) | ((char_dat << 3) & 0xF8) | (pix_addr & 0b11100000111)) >> 2;
-            int pix_line = bitmap[ pix_idx ];
-            int pix_subnum = 12 - ((pix_addr & 0b11) << 2);
-            frame[ pix_out++ ] = pal[ pal_high | (( pix_line >> pix_subnum ) & 0x0F) ];
+            if ( need_draw )
+            {
+                int char_idx = ((pix_addr & 0xF800) >> 6) | ((pix_addr & 0xF8) >> 3);
+                int char_dat = charmap[ char_idx ];
+                int pal_high = (char_dat & 0xF000) >> 8;
+                int pix_idx = (((char_dat << 6) & 0xF800) | ((char_dat << 3) & 0xF8) | (pix_addr & 0b11100000111)) >> 2;
+                int pix_line = bitmap[ pix_idx ];
+                int pix_subnum = 12 - ((pix_addr & 0b11) << 2);
+                int offs = pal_high | (( pix_line >> pix_subnum ) & 0x0F);
+                if ( buf16 )
+                    *buf16++ = pal16[ offs ];
+                if ( buf32 )
+                    *buf32++ = pal32[ offs ];
+            }
             pix_addr++;
             scan_col++;
         }

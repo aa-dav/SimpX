@@ -333,7 +333,7 @@ public:
 	void preProcessFile( const std::string &fileName );
 
     bool parseFile( const std::string &fileName );
-    std::string getErrorMessage() { return errorMessage; };
+    const std::string &getErrorMessage() { return errorMessage; };
     void setSourceFileProvider( const std::shared_ptr< FileProvider > _provider ) { provider = _provider; };
 
 };

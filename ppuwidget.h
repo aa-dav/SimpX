@@ -1,7 +1,7 @@
 #ifndef PPUWIDGET_H
 #define PPUWIDGET_H
 
-#define PPU_SOFT_RENDER 1
+#include "simpx.h"
 
 #if PPU_SOFT_RENDER == 1
 
@@ -16,8 +16,6 @@ class PPUWidget : public QWidget
 public:
     explicit PPUWidget(QWidget *parent = nullptr);
     QImage &getImage() { return image; };
-
-    void setBitmap( uint16_t *data );
 
 signals:
     void painted();
@@ -42,15 +40,16 @@ class PPUWidget : public QOpenGLWidget
     GLuint tex_bitmap = 0;
     GLint a_vertices;
     QOpenGLFunctions_3_3_Compatibility gl;
+    QImage image;
 
     void free_texture( GLuint &tex );
     void set_utex_params( GLuint tex, GLenum slot, int w, int h, uint16_t *ptr );
 
 public:
-    PPUWidget(QWidget*&p): QOpenGLWidget(p) {};
+    PPUWidget(QWidget*&p): QOpenGLWidget(p),
+        image( 256, 192, QImage::Format_RGB555 ) {};
     ~PPUWidget();
-
-    void setBitmap( uint16_t *data );
+    QImage &getImage() { return image; };
 
 signals:
     void painted();
