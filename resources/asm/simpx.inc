@@ -1,5 +1,7 @@
 
 ; Video IO ports
+vidVCount       = $FFEE ; счётчик до прерывания HBlank
+vidAddr         = $FFEF ; адрес следующей строки в HBlank
 vidFlags        = $FFF0 ; флаги
 vidBitmapPage   = $FFF1 ; страница битмапа
 vidCharmapPage  = $FFF2 ; страница чармапа
@@ -18,3 +20,9 @@ mmuPage4        = $FFFC ; страница в банке 8000-9FFF
 mmuPage5        = $FFFD ; страница в банке A000-BFFF
 mmuPage6        = $FFFE ; страница в банке C000-DFFF
 mmuPage7        = $FFFF ; страница в банке E000-FFFF
+
+; PSW flags
+IRQ_ENABLED     = $8000
+CPU_HALT        = $4000
+CPU_DEBUG       = $2000
+CPU_DEBUG_HALT  = $6000

@@ -70,8 +70,18 @@ void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
     const mWord       *pal16 = mmu.getPalPtr16();
     const uint32_t    *pal32 = mmu.getPalPtr32();
     bool need_draw = (pal16 != nullptr) || (pal32 != nullptr);
-    mWord *bitmap = mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidBitmapPage ) );
-    mWord *charmap = mmu.getPtr( mmu.pageSize * mmu.read( mmu.vidCharmapPage ) + mmu.read( mmu.vidCharmapAddr ) );
+    int page = (mmu.read( mmu.vidBitmapPage ) % mmu.getPagesCount()) & 0xFFFE;
+    mWord *bitmap = mmu.getPtr( mmu.pageSize * page );
+    page = mmu.read( mmu.vidCharmapPage ) % mmu.getPagesCount();
+    mWord *charmap = mmu.getPtr( mmu.pageSize * page + (mmu.read( mmu.vidCharmapAddr ) & 0001110000000000 ) );
+
+    // Process VBlank
+    for ( int scan_line = 192; scan_line < 312; scan_line++ )
+    {
+        while ( cpu.getClocks() - clocks < 2 * 448 )
+            cpu.step();
+        clocks += 2 * 448; // skip line
+    }
 
     int scroll_x = mmu.read( mmu.vidScrollX ) & 0xFF;
     int scroll_y = mmu.read( mmu.vidScrollY ) & 0xFF;
@@ -119,12 +129,6 @@ void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
         clocks += 2;
     }
     cpu.triggerIRQ();
-    for ( int scan_line = 192; scan_line < 312; scan_line++ )
-    {
-        while ( cpu.getClocks() - clocks < 2 * 448 )
-            cpu.step();
-        clocks += 2 * 448; // skip line
-    }
 }
 
 }

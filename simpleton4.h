@@ -44,6 +44,7 @@ const int FLAG_ZERO         =	0;
 const int FLAG_CARRY        =	1;
 const int FLAG_SIGN         =	2;
 const int FLAG_OVERFLOW     =	3;
+const int FLAG_DEBUG        = 	13;
 const int FLAG_HALT         = 	14;
 const int FLAG_IRQ_ENABLE   = 	15;
 
@@ -163,17 +164,7 @@ private:
     };
     mWord fetchPC();
     mWord readArg( mTag r, mTag i );
-    bool getFlag( mTag flag )
-	{
-		return (reg[ REG_PSW ] & (1 << flag)) != 0;
-	}
-	void setFlag( mTag flag, bool value ) 
-	{
-		if ( value )
-			reg[ REG_PSW ] |= (1 << flag);
-		else
-			reg[ REG_PSW ] &= ~(1 << flag);
-	}
+
     void mathTempApply();
     void mathOverflow( bool sub );
 
@@ -182,6 +173,18 @@ public:
 	{
 		reset();
 	}
+    bool getFlag( mTag flag )
+    {
+        return (reg[ REG_PSW ] & (1 << flag)) != 0;
+    }
+    void setFlag( mTag flag, bool value )
+    {
+        if ( value )
+            reg[ REG_PSW ] |= (1 << flag);
+        else
+            reg[ REG_PSW ] &= ~(1 << flag);
+    }
+    mWord &getReg( int i ) { return reg[ i ]; };
     uint64_t getClocks() { return clocks; };
 	void reset();
     int step();

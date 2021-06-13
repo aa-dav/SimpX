@@ -159,10 +159,15 @@ int CPU::step()
 				a = y;
 			}
 			break;
-	case OP_RRCI:	//
-			break;
-	case OP_RRC:	//
-			break;
+    case OP_RRCI:	// rrci
+            x = x & 0b1111;
+    case OP_RRC:	// rrc
+            a = (y << (16 - x)) | (y >> x);
+            setFlag( FLAG_CARRY, (y & (1 << (x - 1))) != 0 );
+            setFlag( FLAG_ZERO, (a == 0) );
+            setFlag( FLAG_SIGN, (a & 0x8000) != 0 );
+            setFlag( FLAG_OVERFLOW, false );
+            break;
 	};
 	clocks++;	// ALU tick
 	// store

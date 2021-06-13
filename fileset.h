@@ -2,6 +2,7 @@
 #define FILESET_H
 
 #include <QStringList>
+#include <QListWidget>
 #include "simpleton4asm.h"
 
 class FileSetFile: public Simpleton::File
@@ -19,24 +20,10 @@ public:
 
 class FileSetProvider: public Simpleton::FileProvider
 {
-    QStringList names;
-    QStringList contents;
+    QListWidget *list = nullptr;
 
 public:
-    FileSetProvider() {};
-
-    int     size() { return names.size(); }
-    QString getName( int i ) { return names.at( i ); }
-    void    setName( int i, const QString &val ) { names[ i ] = val; }
-    QString getContent( int i ) { return contents.at( i ); }
-    void    setContent( int i, const QString &val ) { contents[ i ] = val; }
-
-    int     addContent( const QString &name, const QString &content );
-    void    remove( int i )
-    {
-        names.removeAt( i );
-        contents.removeAt( i );
-    };
+    FileSetProvider( QListWidget *_list ): list( _list ) {};
 
     // FileProvider interface
 public:

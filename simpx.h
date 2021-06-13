@@ -70,6 +70,7 @@ public:
     mWord read(mWord addr) override;
     void write(mWord addr, mWord data) override;
     mWord *getPtr(uint32_t addr) override;
+    mWord getPagesCount() { return pagesCount; };
 };
 
 class SimpX

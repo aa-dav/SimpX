@@ -321,7 +321,7 @@ public:
 		if ( !node.isReady() )
 		{
 			resolveForwards();
-			node.resolve( *this );
+            node.resolve( *this );
 		}
 	}
 	void reset();

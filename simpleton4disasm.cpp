@@ -1,5 +1,8 @@
 #include "simpleton4disasm.h"
 
+namespace Simpleton
+{
+
 /*
 
 static const char *NameCmds[] = {
@@ -78,45 +81,42 @@ void Machine::showDisasm( int addr )
     std::cout << sr << " " << sy << " " << sx << "\n";
 };
 
-void Machine::show( int memStart )
+*/
+
+template <typename I>
+static std::string num2hex( I w, size_t hex_len = sizeof( I ) << 1 ) {
+    static const char *digits = "0123456789ABCDEF";
+    std::string rc( hex_len, '0' );
+    for (size_t i = 0, j = 4 * ( hex_len - 1 ); i < hex_len; ++i, j -= 4 )
+        rc[ i ] = digits[ (w >> j) & 0x0f ];
+    return rc;
+}
+
+std::string simpleDump( CPU &cpu )
 {
+    std::string res;
     for ( int i = 0; i < 8; i++ )
     {
         if ( i == REG_SP )
-            std::cout << "SP";
+            res += "SP";
         else if ( i == REG_PC )
-            std::cout << "PC";
+            res += "PC";
         else if ( i == REG_PSW )
-            std::cout << "PW";
+            res += "PW";
         else
-            std::cout << "R" << i;
-        std::cout << ":" << std::uppercase << std::hex << std::setw( 4 ) << std::setfill( '0' ) << reg[ i ];
-        //if ( i != 7 )
-            std::cout << "  ";
+            res += "R" + std::to_string( i );
+        res += ":" + num2hex( cpu.getReg( i ) ) + " ";
     };
-    std::cout << (getFlag( FLAG_OVERFLOW )	? "V" : "-" );
-    std::cout << (getFlag( FLAG_SIGN )	? "S" : "-" );
-    std::cout << (getFlag( FLAG_CARRY )	? "C" : "-" );
-    std::cout << (getFlag( FLAG_ZERO )	? "Z" : "-" );
-    std::cout << "  CLCK " << std::dec << clocks << "\n";
-    if ( memStart >= 0 )
-    {
-        mWord start = memStart;
-        int cols = 8;
-        int rows = 16;
-        for ( int y = 0; y < rows; y++ )
-        {
-            for ( int x = 0; x < cols; x++ )
-            {
-                if ( x )
-                    std::cout << "  ";
-                mWord cell = start + y + x * rows;
-                std::cout << std::hex << std::setw( 4 ) << std::setfill( '0' ) << cell  << ":";
-                std::cout << std::hex << std::setw( 4 ) << std::setfill( '0' ) << mem[ cell ];
-            };
-            std::cout << "\n";
-        };
-    }
+    res += (cpu.getFlag( FLAG_IRQ_ENABLE )	? "I" : "-" );
+    res += (cpu.getFlag( FLAG_HALT )        ? "H" : "-" );
+    res += (cpu.getFlag( FLAG_DEBUG )       ? "D" : "-" );
+    res += ":";
+    res += (cpu.getFlag( FLAG_OVERFLOW )	? "V" : "-" );
+    res += (cpu.getFlag( FLAG_SIGN )        ? "S" : "-" );
+    res += (cpu.getFlag( FLAG_CARRY )       ? "C" : "-" );
+    res += (cpu.getFlag( FLAG_ZERO )        ? "Z" : "-" );
+    res += "  CLCK " + std::to_string( cpu.getClocks() ) + "\n";
+    return res;
 }
 
-*/
+}

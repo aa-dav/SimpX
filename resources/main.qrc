@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>asm/simpx.inc</file>
         <file>asm/test0.asm</file>
+        <file>asm/font-00.asm</file>
+        <file>asm/simple_lib.inc</file>
     </qresource>
 </RCC>

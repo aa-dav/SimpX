@@ -7,6 +7,7 @@
 #include <QTextStream>
 #include "simp4completer.h"
 #include "simp4highlighter.h"
+#include "simpleton4disasm.h"
 
 #if BUILD_WEBASSEMBLY != 1
 static const char* orgName = "AlxSoft";
@@ -41,9 +42,10 @@ QString readResourceAsString( QString name )
     return strm.readAll();
 }
 
-#define INIT_PREDEF_FILE( name ) \
-    files->addContent( name, readResourceAsString( ":/asm/" name ) ); \
-    ui->filesList->addItem( name );
+#define INIT_PREDEF_FILE( name ) { \
+    QListWidgetItem *item = new QListWidgetItem( name ); \
+    item->setData( Qt::ItemDataRole::UserRole, readResourceAsString( ":/asm/" name ) ); \
+    ui->filesList->addItem( item ); };
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -54,9 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     statusLabel = new QLabel();
     ui->statusBar->addWidget( statusLabel );
-    connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
-
-    files = std::make_shared<FileSetProvider>();
+    //connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
 
     ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
@@ -66,9 +66,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     INIT_PREDEF_FILE( "simpx.inc" );
     INIT_PREDEF_FILE( "test0.asm" );
+    INIT_PREDEF_FILE( "font-00.asm" );
+    INIT_PREDEF_FILE( "simple_lib.inc" );
 
 #if BUILD_WEBASSEMBLY == 1
-    asm4.setSourceFileProvider( files );
+    asm4.setSourceFileProvider( std::make_shared<FileSetProvider>( ui->filesList ) );
 #else
     asm4.setSourceFileProvider( std::make_shared<Simpleton::FileProviderStd>() );
 
@@ -85,6 +87,10 @@ MainWindow::MainWindow(QWidget *parent)
         restoreState( val.toByteArray() );
     sett.endGroup();
 #endif
+
+    timer.setSingleShot( false );
+    connect( &timer, SIGNAL( timeout() ), this, SLOT( on_Timer() ) );
+    timer.start( 17 );
 }
 
 MainWindow::~MainWindow()
@@ -104,44 +110,50 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-int MainWindow::getFilesSelRow()
-{
-    QListWidgetItem* item = getFilesSelItem();
-    if ( item != nullptr )
-    {
-        return ui->filesList->row( item );
-    }
-    else
-        return -1;
-}
-
 QListWidgetItem *MainWindow::getFilesSelItem()
 {
     QList< QListWidgetItem* > sels = ui->filesList->selectedItems();
+    QListWidgetItem *ret = nullptr;
     if ( sels.size() > 0 )
-        return sels.at( 0 );
-    else
-        return nullptr;
+    {
+        ret = sels.at( 0 );
+    }
+    return ret;
 }
+
+QListWidgetItem *MainWindow::findFilesItem( const QString &name )
+{
+    for ( int i = 0; i < ui->filesList->count(); i++ )
+    {
+        if ( ui->filesList->item( i )->text() == name )
+        {
+            return ui->filesList->item( i );
+        }
+    }
+    return nullptr;
+};
+
 
 void MainWindow::fileContentReady(const QString &fname, const QByteArray &arr)
 {
     QString shortName = QFileInfo( fname ).fileName();
     QString content = QString::fromUtf8( arr );
-    int pos = files->addContent( shortName, content );
-    int selRow = getFilesSelRow();
-    if ( pos <= selRow )
+    QListWidgetItem *item = findFilesItem( shortName );
+    if ( item )
     {
-        if ( pos == selRow )
+        item->setData( Qt::ItemDataRole::UserRole, content );
+        if ( item == getFilesSelItem() )
             ui->codeEditor->setPlainText( content );
         else
-            ui->filesList->setCurrentRow( pos );
+            ui->filesList->setCurrentItem( item );
     }
     else
     {
-        ui->filesList->addItem( shortName );
-        ui->filesList->setCurrentRow( pos );
-    };
+        item = new QListWidgetItem( shortName );
+        item->setData( Qt::ItemDataRole::UserRole, content );
+        ui->filesList->addItem( item );
+        ui->filesList->setCurrentItem( item );
+    }
 }
 
 void MainWindow::on_Timer()
@@ -155,6 +167,16 @@ void MainWindow::on_Timer()
 #else
         simp.stepFrame( (uint16_t *) ui->glWidget->getImage().bits(), nullptr );
 #endif
+        if ( simp.getCPU().getFlag( Simpleton::FLAG_DEBUG ) )
+        {
+            simp.getCPU().setFlag( Simpleton::FLAG_DEBUG, false );
+            run = false;
+            //ui->debuggerEditor->clear();
+            QString dump = QString::fromStdString( simpleDump( simp.getCPU() ) );
+            ui->debuggerEditor->moveCursor (QTextCursor::End);
+            ui->debuggerEditor->insertPlainText( dump );
+            ui->tabWidget->setCurrentWidget( ui->debuggerTab );
+        }
         ui->glWidget->update();
     }
 }
@@ -190,21 +212,21 @@ void MainWindow::on_actionOpen_triggered()
 #endif
 }
 
-void MainWindow::saveCurrentFile()
+QListWidgetItem *MainWindow::saveCurrentFile()
 {
-    int curRow = getFilesSelRow();
-    if ( curRow >= 0 )
+    QListWidgetItem *item = getFilesSelItem();
+    if ( item )
     {
-        files->setContent( curRow, ui->codeEditor->toPlainText() ); // save it
+        item->setData( Qt::ItemDataRole::UserRole, ui->codeEditor->toPlainText() ); // save it
     }
+    return item;
 }
 
 void MainWindow::on_actionSave_triggered()
 {
-    saveCurrentFile();
-    int row = getFilesSelRow();
-    if ( row >= 0 )
-        QFileDialog::saveFileContent( files->getContent( row ).toUtf8(), files->getName( row ) );
+    QListWidgetItem *item = saveCurrentFile();
+    if ( item )
+        QFileDialog::saveFileContent( item->data( Qt::ItemDataRole::UserRole ).toByteArray(), item->text() );
 }
 
 void MainWindow::on_actionView200_triggered()
@@ -233,46 +255,39 @@ void MainWindow::on_actionRun_triggered()
     simp.reset();
     asm4.reset();
 
-    saveCurrentFile();
-    int curRow = getFilesSelRow();
-    if ( curRow < 0 )
+    QListWidgetItem *item = saveCurrentFile();
+    if ( item == nullptr )
     {
         ui->msgEdit->setPlainText( "There is no selected file!" );
         return;
     }
-    if ( !asm4.parseFile( files->getName( curRow ).toStdString() ) )
+    if ( !asm4.parseFile( item->text().toStdString() ) )
     {
         ui->msgEdit->setPlainText( asm4.getErrorMessage().c_str() );
-        ui->tabWidget->setCurrentIndex( 1 );
+        ui->tabWidget->setCurrentWidget( ui->editorTab );
     }
     else
     {
         run = true;
         ui->msgEdit->setPlainText( "Ok." );
-        ui->tabWidget->setCurrentIndex( 0 );
+        ui->debuggerEditor->clear();
+        ui->tabWidget->setCurrentWidget( ui->videoTab );
     }
 }
 
 void MainWindow::on_filesList_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
 {
-    int row;
     // save current one...
     if ( (previous != nullptr) )
     {
-        row = ui->filesList->row( previous );
-        if ( (row >= 0) )
-            files->setContent( row, ui->codeEditor->toPlainText() );
+        previous->setData( Qt::ItemDataRole::UserRole, ui->codeEditor->toPlainText() );
     }
     if ( current != nullptr )
     {
-        row = ui->filesList->row( current );
-        if ( row >= 0 )
-        {
-            ui->codeEditor->setPlainText( files->getContent( row ) );
-            ui->fileNameEdit->setText( files->getName( row ) );
-            ui->codeEditor->setReadOnly( false );
-            ui->fileNameEdit->setReadOnly( false );
-        }
+        ui->codeEditor->setPlainText( current->data( Qt::ItemDataRole::UserRole ).toString() );
+        ui->fileNameEdit->setText( current->text() );
+        ui->codeEditor->setReadOnly( false );
+        ui->fileNameEdit->setReadOnly( false );
     }
     else
     {
@@ -293,9 +308,7 @@ void MainWindow::on_delFileBtn_clicked()
     QListWidgetItem *item = getFilesSelItem();
     if ( item )
     {
-        int row = ui->filesList->row( item );
         delete item;
-        files->remove( row );
     }
 }
 
@@ -305,6 +318,56 @@ void MainWindow::on_fileNameEdit_textEdited(const QString &arg1)
     if ( item )
     {
         item->setText( arg1 );
-        files->setName( ui->filesList->row( item ), arg1 );
     }
+    QImage img;
+}
+
+
+
+void MainWindow::on_actionImageToAsm_triggered()
+{
+    QFileDialog::getOpenFileContent(
+        "All files (*.*) ;; Image files (*.png *.bmp *.jpg *.gif)",
+        [&](const QString &fname, const QByteArray &arr)
+        {
+            QString baseName = QFileInfo( fname ).completeBaseName();
+            QImage img;
+            if ( !img.loadFromData( arr ) )
+            {
+                ui->msgEdit->setPlainText( "Cannot read image!" );
+                return;
+            }
+            ui->msgEdit->setPlainText( QString( "image is %0 x %1" ).arg( img.width() ).arg( img.height() ) );
+            QString out;
+            out += baseName + "\n";
+            int acc = 0;
+            int quot = 0;
+            for ( int j = 0; j < img.height(); j++ )
+                for ( int i = 0; i < img.width(); i++ )
+                {
+                    QRgb pix = img.pixel( i, j );
+                    int clr = (qGray( pix ) > 100) ? 15 : 0;
+                    acc = ((acc << 4) | clr);
+                    quot++;
+                    if ( quot == 4 )
+                    {
+                        QString num = QString::number( acc, 16 );
+                        while ( num.size() < 4 )
+                            num = "0" + num;
+                        out += "\t\tdw $" + num + "\n";
+                        acc = 0;
+                        quot = 0;
+                    }
+                }
+            out += baseName + "_end\n";
+            QFileDialog::saveFileContent( out.toUtf8(), baseName + ".asm" );
+        } );
+
+}
+
+void MainWindow::on_actionResume_triggered()
+{
+    run = true;
+    ui->glWidget->update();
+    ui->tabWidget->setCurrentWidget( ui->videoTab );
 }

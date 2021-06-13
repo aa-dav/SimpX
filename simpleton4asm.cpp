@@ -112,7 +112,7 @@ Assembler::Identifier *Assembler::findIdentifier( const std::string &name, bool 
     for ( size_t i = 0; i < identifiers.size(); i++ )
 	{
 		Identifier &ident = identifiers[ i ];
-		if ( !newSyntax && (ident.mode == Identifier::AsmNew) )
+        if ( !newSyntax && (ident.mode == Identifier::AsmNew) )
 			continue;
 		if ( newSyntax && (ident.mode == Identifier::AsmClassic) )
 			continue;
@@ -143,9 +143,9 @@ bool Assembler::ExprNode::resolve( Assembler &assembler )
 		{
 			value = iden->getValue();
 			type = ExprNode::Literal;
-			return true;
-		}	        
-		return false;
+            return true;
+        }
+        return false;
 	}
 	else
 	{
@@ -201,17 +201,19 @@ void Assembler::resolveForwards()
 	{
 		tries++;
 		bool changed = false;
-		for ( auto &fwd : forwards )
+        for ( auto &iden : identifiers )
+        {
+            if ( !iden.isReady() )
+                if ( iden.resolve( *this ) )
+                    changed = true;
+        }
+        for ( auto &fwd : forwards )
 		{
 			if ( !fwd.node.isReady() )
-				if ( fwd.node.resolve( *this ) )
+            {
+                if ( fwd.node.resolve( *this ) )
 					changed = true;
-		}
-		for ( auto &iden : identifiers )
-		{
-			if ( !iden.isReady() )
-				if ( iden.resolve( *this ) )
-					changed = true;
+            }
 		}
 		if ( !changed )
 			break;
@@ -505,7 +507,7 @@ void Assembler::processArgument( const std::string &kind, const int reg, const E
 	}
 	else
 	{
-		throw ParseError( lineNum, kind + " '" + expr->getDesc() + "' at wrong place!" );
+        throw ParseError( lineNum, kind + " '" + (expr ? expr->getDesc() : std::to_string( reg ) ) + "' at wrong place!" );
 	};
 }
 

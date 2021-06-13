@@ -11,6 +11,7 @@
 #include "simpleton4asm.h"
 #include "simpx.h"
 #include "fileset.h"
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,7 +28,8 @@ class MainWindow : public QMainWindow
     Simpleton::Assembler asm4;
     bool run = false;
     QString lastOpenFile;
-    std::shared_ptr< FileSetProvider > files;
+    QTimer timer;
+    //std::shared_ptr< FileSetProvider > files;
 
     void setViewSize( int coef );
 
@@ -35,12 +37,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    int getFilesSelRow();
     QListWidgetItem *getFilesSelItem();
-    void setFilesSelRow( int row );
+    QListWidgetItem *findFilesItem( const QString &name );
 
     void fileContentReady( const QString &fname, const QByteArray &arr );
-    void saveCurrentFile();
+    QListWidgetItem *saveCurrentFile(); // save current file and return item of it
 
 private slots:
     void on_Timer();
@@ -67,6 +68,10 @@ private slots:
     void on_fileNameEdit_textEdited(const QString &arg1);
 
     void on_actionSave_triggered();
+
+    void on_actionImageToAsm_triggered();
+
+    void on_actionResume_triggered();
 
 private:
     Ui::MainWindow *ui;
