@@ -165,8 +165,8 @@ font-00
 		dw $f000
 		dw $0000
 		dw $0f00
-		dw $0000
-		dw $0f00
+		dw $000f
+		dw $ff00
 		dw $00f0
 		dw $f000
 		dw $0fff
@@ -229,8 +229,8 @@ font-00
 		dw $f000
 		dw $000f
 		dw $f000
-		dw $000f
-		dw $f000
+		dw $0000
+		dw $00f0
 		dw $0f00
 		dw $f000
 		dw $0000
@@ -1110,7 +1110,7 @@ font-00
 		dw $0000
 		dw $0000
 		dw $00f0
-		dw $0000
+		dw $0f00
 		dw $000f
 		dw $0000
 		dw $0000
@@ -1166,7 +1166,7 @@ font-00
 		dw $000f
 		dw $0000
 		dw $00ff
-		dw $0f00
+		dw $ff00
 		dw $00ff
 		dw $f000
 		dw $0000
@@ -1174,7 +1174,7 @@ font-00
 		dw $000f
 		dw $f000
 		dw $00f0
-		dw $0f00
+		dw $f000
 		dw $000f
 		dw $0000
 		dw $0ff0
@@ -1183,11 +1183,11 @@ font-00
 		dw $fff0
 		dw $00ff
 		dw $ff00
-		dw $0f0f
+		dw $0fff
 		dw $ff00
 		dw $00ff
-		dw $f0f0
-		dw $00f0
+		dw $fff0
+		dw $00ff
 		dw $ff00
 		dw $00f0
 		dw $0000
@@ -1230,15 +1230,15 @@ font-00
 		dw $00ff
 		dw $f000
 		dw $0f00
-		dw $ff00
+		dw $0f00
 		dw $00f0
 		dw $0f00
 		dw $0000
 		dw $f000
 		dw $0000
 		dw $f000
-		dw $00f0
-		dw $f000
+		dw $00ff
+		dw $0000
 		dw $000f
 		dw $0000
 		dw $0f0f
@@ -1247,11 +1247,11 @@ font-00
 		dw $00f0
 		dw $0f00
 		dw $00f0
-		dw $0ff0
+		dw $0f00
 		dw $00f0
 		dw $0f00
-		dw $0ff0
-		dw $00ff
+		dw $00f0
+		dw $00f0
 		dw $00f0
 		dw $000f
 		dw $f000
@@ -1283,12 +1283,12 @@ font-00
 		dw $0000
 		dw $0f00
 		dw $0ff0
-		dw $0ff0
+		dw $0f00
 		dw $00f0
 		dw $00f0
 		dw $0000
 		dw $0f00
-		dw $0ff0
+		dw $00f0
 		dw $0f00
 		dw $0000
 		dw $000f
@@ -1301,8 +1301,8 @@ font-00
 		dw $f000
 		dw $0000
 		dw $f000
-		dw $00ff
-		dw $0000
+		dw $00f0
+		dw $f000
 		dw $000f
 		dw $0000
 		dw $0f00
@@ -1322,7 +1322,7 @@ font-00
 		dw $000f
 		dw $0000
 		dw $00f0
-		dw $0ff0
+		dw $00f0
 		dw $00f0
 		dw $0f00
 		dw $0f0f
@@ -1347,18 +1347,18 @@ font-00
 		dw $0000
 		dw $00ff
 		dw $f0f0
-		dw $0f0f
+		dw $0fff
 		dw $ff00
 		dw $000f
 		dw $ff00
 		dw $00ff
-		dw $f0f0
+		dw $fff0
 		dw $00ff
 		dw $ff00
 		dw $000f
 		dw $0000
 		dw $00ff
-		dw $0f00
+		dw $ff00
 		dw $00f0
 		dw $0f00
 		dw $0000
@@ -1366,7 +1366,7 @@ font-00
 		dw $0000
 		dw $f000
 		dw $00f0
-		dw $ff00
+		dw $0f00
 		dw $000f
 		dw $f000
 		dw $0f00
@@ -1386,7 +1386,7 @@ font-00
 		dw $000f
 		dw $f000
 		dw $000f
-		dw $f0f0
+		dw $fff0
 		dw $000f
 		dw $f000
 		dw $0ff0
@@ -1427,7 +1427,7 @@ font-00
 		dw $0000
 		dw $0000
 		dw $0000
-		dw $0000
+		dw $0f00
 		dw $f000
 		dw $0000
 		dw $0000
@@ -1491,7 +1491,7 @@ font-00
 		dw $0000
 		dw $0000
 		dw $0000
-		dw $0fff
+		dw $00ff
 		dw $0000
 		dw $0000
 		dw $0000
@@ -1535,516 +1535,516 @@ font-00
 		dw $0000
 		dw $ffff
 		dw $ffff
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
-		dw $0000
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
+		dw $ffff
 font-00_end
