@@ -97,7 +97,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    README.md
+    README.md \
+    README_simpleton_en.md
 
 RESOURCES += \
     resources/main.qrc \
