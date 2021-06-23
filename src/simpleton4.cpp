@@ -161,6 +161,7 @@ int CPU::step()
 			break;
     case OP_RRCI:	// rrci
             x = x & 0b1111;
+            // fallthrough is intended and not an error!!!
     case OP_RRC:	// rrc
             a = (y << (16 - x)) | (y >> x);
             setFlag( FLAG_CARRY, (y & (1 << (x - 1))) != 0 );
