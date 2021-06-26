@@ -18,11 +18,16 @@ public:
     QImage &getImage() { return image; };
 
 signals:
-    void painted();
+    void keyInput( bool pressed, int keyCode, int modif );
 
     // QWidget interface
 protected:
     void paintEvent(QPaintEvent *event) override;
+
+    // QWidget interface
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 };
 
 #else
@@ -52,13 +57,18 @@ public:
     QImage &getImage() { return image; };
 
 signals:
-    void painted();
+    void keyInput( bool pressed, int keyCode, int modif );
 
     // QGLWidget interface
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
+
+    // QWidget interface
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 };
 
 #endif

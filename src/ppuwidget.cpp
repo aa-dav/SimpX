@@ -1,5 +1,6 @@
 #include "ppuwidget.h"
 #include <QMessageBox>
+#include <QKeyEvent>
 
 #if PPU_SOFT_RENDER == 1
 
@@ -11,14 +12,12 @@ PPUWidget::PPUWidget(QWidget *parent) : QWidget(parent),
     setAttribute( Qt::WA_OpaquePaintEvent, true );
 }
 
-
 void PPUWidget::paintEvent(QPaintEvent */*event*/)
 {
     QPainter painter( this );
     QRect rectFrom = { 0, 0, image.width(), image.height() };
     QRect rectTo = { 0, 0, width(), height() };
     painter.drawImage( rectTo, image, rectFrom );
-    emit painted();
 }
 
 #else
@@ -148,3 +147,13 @@ void PPUWidget::paintGL()
 }
 
 #endif // ifdef PPU_SOFT_RENDER
+
+void PPUWidget::keyPressEvent(QKeyEvent *event)
+{
+    emit keyInput( true, event->key(), event->modifiers() );
+}
+
+void PPUWidget::keyReleaseEvent(QKeyEvent *event)
+{
+    emit keyInput( false, event->key(), event->modifiers() );
+}

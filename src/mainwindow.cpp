@@ -58,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->statusBar->addWidget( statusLabel );
     //connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
 
+    connect( ui->glWidget, SIGNAL( keyInput(bool, int, int) ), this, SLOT( on_keyInput(bool, int, int) ) );
+
     ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
     ui->codeEditor->setWordWrapMode( QTextOption::NoWrap );
@@ -222,6 +224,12 @@ QListWidgetItem *MainWindow::saveCurrentFile()
     return item;
 }
 
+void MainWindow::logStr(const QString &str)
+{
+    ui->debuggerEditor->moveCursor( QTextCursor::End );
+    ui->debuggerEditor->insertPlainText( str );
+}
+
 void MainWindow::on_actionSave_triggered()
 {
     QListWidgetItem *item = saveCurrentFile();
@@ -370,4 +378,25 @@ void MainWindow::on_actionResume_triggered()
     run = true;
     ui->glWidget->update();
     ui->tabWidget->setCurrentWidget( ui->videoTab );
+}
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    if ( index == 0 )
+        ui->glWidget->setFocus();
+}
+
+void MainWindow::on_keyInput(bool pressed, int key, int modif )
+{
+    if ( pressed )
+    {
+        int usbKey = Simpleton::qtKeyToUSB( key );
+        if ( usbKey != 0 )
+        {
+            logStr( QStringLiteral( "usb: %1 (key: %2, modif: %3)\n" )
+                    .arg( usbKey, 0, 16 )
+                    .arg( key, 0, 16 )
+                    .arg( modif, 0 , 16 ));
+        }
+    }
 }

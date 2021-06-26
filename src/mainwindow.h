@@ -43,6 +43,8 @@ public:
     void fileContentReady( const QString &fname, const QByteArray &arr );
     QListWidgetItem *saveCurrentFile(); // save current file and return item of it
 
+    void logStr( const QString &str );
+
 private slots:
     void on_Timer();
     void on_actionQuit_triggered();
@@ -73,7 +75,12 @@ private slots:
 
     void on_actionResume_triggered();
 
+    void on_tabWidget_currentChanged(int index);
+
+    void on_keyInput( bool pressed, int key, int modif );
+
 private:
     Ui::MainWindow *ui;
 };
+
 #endif // MAINWINDOW_H

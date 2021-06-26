@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <Qt>
 
 FpsMeter::FpsMeter()
 {
@@ -24,3 +25,5 @@ void FpsMeter::tick()
         startTicks = endTicks;
     }
 }
+
+
