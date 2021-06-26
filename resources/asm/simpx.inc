@@ -1,4 +1,5 @@
-
+; Keyboard/Gamepads/Mouse input-output port
+portInput       = $FFE0
 ; Video IO ports
 vidVCount       = $FFEE ; счётчик до прерывания HBlank
 vidAddr         = $FFEF ; адрес следующей строки в HBlank

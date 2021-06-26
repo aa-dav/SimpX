@@ -25,7 +25,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
     // QWidget interface
-protected:
+public:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
 };
@@ -66,7 +66,7 @@ protected:
     void paintGL() override;
 
     // QWidget interface
-protected:
+public:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
 };

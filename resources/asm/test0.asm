@@ -9,16 +9,36 @@ start
             call zstrPrint
             [ textAttrs ] <- $0000 ; вернёмся к палитре №0
             
-            r0 <- 0        ; счётчик
-.loop       call printHex  ; выведем его на экран
-            r1 <- r0       ; запомним в r1
+.loop
+            [ portInput ] <- 1
+            r0 <- [ portInput ]
+            call printHex  ; выведем его на экран
             r0 <- 32       ; код пробела
             call printChar ; напечатаем пробел
+
+            [ portInput ] <- 2
+            r0 <- [ portInput ]
+            call printHex  ; выведем его на экран
+            r0 <- 32       ; код пробела
+            call printChar ; напечатаем пробел
+
+            [ portInput ] <- 4
+            r0 <- [ portInput ]
+            call printHex  ; выведем его на экран
+            r0 <- 32       ; код пробела
+            call printChar ; напечатаем пробел
+
+            [ portInput ] <- 8
+            r0 <- [ portInput ]
+            call printHex  ; выведем его на экран
+            r0 <- 13
+            call printChar ; напечатаем пробел
+
             psw = psw | CPU_HALT ; выждем паузу
-            psw = psw | CPU_HALT ; выждем паузу
-            psw = psw | CPU_HALT ; выждем паузу
-            psw = psw | CPU_HALT ; выждем паузу
-            r0 <- r1 + 1    ; увеличим счётчик
+            ;psw = psw | CPU_HALT ; выждем паузу
+            ;psw = psw | CPU_HALT ; выждем паузу
+            ;psw = psw | CPU_HALT ; выждем паузу
+
             pc <- .loop     ; бесконечный цикл
             
 forever     psw = psw | CPU_HALT ; переводим процессор в режим ожидания

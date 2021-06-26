@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     //connect( ui->glWidget, SIGNAL( painted() ), this, SLOT(on_Timer()));
 
     connect( ui->glWidget, SIGNAL( keyInput(bool, int, int) ), this, SLOT( on_keyInput(bool, int, int) ) );
+    ui->glWidget->installEventFilter( this );
 
     ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
@@ -388,15 +389,39 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
 void MainWindow::on_keyInput(bool pressed, int key, int modif )
 {
-    if ( pressed )
+    int usbKey = Simpleton::qtKeyToUSB( key, modif );
+    if ( usbKey != 0 )
     {
-        int usbKey = Simpleton::qtKeyToUSB( key );
-        if ( usbKey != 0 )
+        simp.getMMU().setInputBit( pressed, usbKey );
+    }
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if ( watched == ui->glWidget )
+    {
+        if ( (event->type() == QEvent::KeyPress) )
         {
-            logStr( QStringLiteral( "usb: %1 (key: %2, modif: %3)\n" )
-                    .arg( usbKey, 0, 16 )
-                    .arg( key, 0, 16 )
-                    .arg( modif, 0 , 16 ));
+            QKeyEvent *keyEvent = static_cast< QKeyEvent * >( event );
+            if ( (keyEvent->key() == Qt::Key_Tab) ||
+                 (keyEvent->key() == Qt::Key_Backtab) ||
+                 (keyEvent->key() == Qt::Key_Alt) )
+            {
+                ui->glWidget->keyPressEvent( keyEvent );
+                return true;
+            }
+        }
+        else if ( (event->type() == QEvent::KeyPress) )
+        {
+            QKeyEvent *keyEvent = static_cast< QKeyEvent * >( event );
+            if ( (keyEvent->key() == Qt::Key_Tab) ||
+                 (keyEvent->key() == Qt::Key_Backtab) ||
+                 (keyEvent->key() == Qt::Key_Alt) )
+            {
+                ui->glWidget->keyReleaseEvent( keyEvent );
+                return true;
+            }
         }
     }
+    return QMainWindow::eventFilter( watched, event );
 }

@@ -142,8 +142,6 @@ void PPUWidget::paintGL()
     gl.glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
 
     prg.disableAttributeArray( a_vertices );
-
-    emit painted();
 }
 
 #endif // ifdef PPU_SOFT_RENDER

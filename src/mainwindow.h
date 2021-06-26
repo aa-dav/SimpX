@@ -81,6 +81,10 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    // QObject interface
+public:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

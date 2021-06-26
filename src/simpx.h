@@ -23,6 +23,7 @@ enum KeyCodes
 // #define KEY_MOD_RSHIFT 0x20
 // #define KEY_MOD_RALT   0x40
 // #define KEY_MOD_RMETA  0x80
+
     // Controls
     Key_NONE        = 0x00, // None
     Key_CTRL        = 0x01, // Ctrl
@@ -132,33 +133,104 @@ enum KeyCodes
     Key_KPDOT       = 0x63 // Keypad . and Delete
 };
 
-int qtKeyToUSB( int key );
+enum GamePadKeys
+{
+    // key masks...
+    GPK_LEFT        = 1 << 0,
+    GPK_RIGHT       = 1 << 1,
+    GPK_UP          = 1 << 2,
+    GPK_DOWN        = 1 << 3,
+    GPK_A           = 1 << 4,
+    GPK_B           = 1 << 5,
+    GPK_SELECT      = 1 << 8,
+    GPK_START       = 1 << 9,
+    GPK_X           = 1 << 6,
+    GPK_Y           = 1 << 7,
+    GPK_LB          = 1 << 10,
+    GPK_RB          = 1 << 11,
+    GPK_LT          = 1 << 12,
+    GPK_RT          = 1 << 13,
+    GPK_LX          = 1 << 14,
+    GPK_LY          = 1 << 15
+};
+
+enum InputSlots
+{
+    InputKeys0      = 1 << 0,
+    InputKeys1      = 1 << 1,
+    InputKeys2      = 1 << 2,
+    InputKeys3      = 1 << 3,
+    InputKeys4      = 1 << 4,
+    InputKeys5      = 1 << 5,
+    InputKeys6      = 1 << 6,
+    InputKeys7      = 1 << 7,
+    InputGamePad1   = 1 << 8,
+    InputGamePad2   = 1 << 9
+};
+
+enum IOPorts
+{
+    inputsCount     = 16,
+    portsCount      = 32,
+    portStart       = 0xFFE0,
+    // Keyboard/Gamepads/Mouse input-output port
+    portInput       = 0xFFE0,
+    // Video IO ports
+    vidVCount       = 0xFFEE, // счётчик до прерывания HBlank
+    vidAddr         = 0xFFEF, // адрес следующей строки в HBlank
+    vidFlags        = 0xFFF0, // глобальные флаги видеоадаптера
+    vidBitmapPage   = 0xFFF1, // страница битмапа
+    vidCharmapPage  = 0xFFF2, // страница чармапа
+    vidCharmapAddr  = 0xFFF3, // внутристраничная часть (000 XXX00 00000000) адреса чармапа
+    vidScrollX      = 0xFFF4,
+    vidScrollY      = 0xFFF5,
+    vidPalPtr       = 0xFFF6,
+    vidPalData      = 0xFFF7,
+    // MMU IO ports
+    mmuPageBase     = portsCount - 8, // first slot of pageSels in ports[]
+    mmuPage0        = 0xFFF8,
+    mmuPage1        = 0xFFF9,
+    mmuPage2        = 0xFFFA,
+    mmuPage3        = 0xFFFB,
+    mmuPage4        = 0xFFFC,
+    mmuPage5        = 0xFFFD,
+    mmuPage6        = 0xFFFE,
+    mmuPage7        = 0xFFFF
+
+};
+
+int qtKeyToUSB( int key, int modif );
 
 class SimpXMMU : public MMU
 {
+public:
+    enum Params
+    {
+        // not really enum, but constexpr values for parameters...
+        bitsInPage = 3,
+        bitsInAddr = 16 - bitsInPage,
+        pageSize = 1 << bitsInAddr,
+        addrMask = pageSize - 1,
+        pageMask = (1 << bitsInPage) - 1
+    };
+
 private:
     unsigned int pagesCount;
     std::vector< mWord > mem;
-    mWord pages[ 8 ];
     mWord pal16[ 256 ];
     uint32_t pal32[ 256 ];
-    mWord input[ 16 ];
+    mWord ports[ portsCount ];
+    mWord inputs[ inputsCount ];
 
     // MMU interface
 public:
-    static const unsigned int bitsInPage = 3;
-    static const unsigned int bitsInAddr = 16 - bitsInPage;
-    static const unsigned int pageSize = 1 << bitsInAddr;
-    static const unsigned int addrMask = pageSize - 1;
-    static const unsigned int pageMask = (1 << bitsInPage) - 1;
-
     constexpr static mWord getPageNum( mWord addr )
     {
         return (addr >> bitsInAddr) & pageMask;
     }
     mWord &getMem( mWord addr )
     {
-        size_t idx = (pages[ getPageNum( addr ) ] << bitsInAddr) | (addr & addrMask);
+        size_t idx = (ports[ mmuPageBase + getPageNum( addr ) ] << bitsInAddr) | (addr & addrMask);
         if ( idx >= mem.size() )
         {
             return mem[ 0 ];
@@ -168,31 +240,6 @@ public:
     const mWord    *getPalPtr16() { return pal16; };
     const uint32_t *getPalPtr32() { return pal32; };
 
-    enum IOPorts
-    {
-        portStart        = 0xFFE0,
-        // Keyboard/Gamepads/Mouse input-output port
-        portInput        = 0xFFE0,
-        // Video IO ports
-        vidFlags         = 0xFFF0,
-        vidBitmapPage    = 0xFFF1,
-        vidCharmapPage   = 0xFFF2,
-        vidCharmapAddr   = 0xFFF3, // 000 XXX00 00000000
-        vidScrollX       = 0xFFF4,
-        vidScrollY       = 0xFFF5,
-        vidPalPtr        = 0xFFF6,
-        vidPalData       = 0xFFF7,
-        // MMU IO ports
-        mmuPage0         = 0xFFF8,
-        mmuPage1         = 0xFFF9,
-        mmuPage2         = 0xFFFA,
-        mmuPage3         = 0xFFFB,
-        mmuPage4         = 0xFFFC,
-        mmuPage5         = 0xFFFD,
-        mmuPage6         = 0xFFFE,
-        mmuPage7         = 0xFFFF
-    };
-
     SimpXMMU( int _pagesCount ): pagesCount( _pagesCount ), mem( pageSize * _pagesCount, 0 ) {};
     ~SimpXMMU() {};
     void reset() override;
@@ -200,6 +247,8 @@ public:
     void write(mWord addr, mWord data) override;
     mWord *getPtr(uint32_t addr) override;
     mWord getPagesCount() { return pagesCount; };
+    void setInputBit( bool bit, mWord idx );
+    void setInputWord( mWord data, mWord idx );
 };
 
 class SimpX

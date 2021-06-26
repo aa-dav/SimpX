@@ -5,8 +5,13 @@ namespace Simpleton
 
 void Simpleton::SimpXMMU::reset()
 {
+    for ( int i = 0; i < portsCount; i++ )
+        ports[ i ] = 0;
+    // preset page selectors
     for ( int i = 0; i < 8; i++ )
-        pages[ i ] = i;
+        ports[ mmuPageBase + i ] = i;
+    for ( int i = 0; i < inputsCount; i++ )
+        inputs[ i ] = 0;
     for ( int i = 0; i < 256; i++ )
     {
         pal16[ i ] = 0;
@@ -20,16 +25,28 @@ mWord Simpleton::SimpXMMU::read(mWord addr)
 {
     if ( addr >= portStart ) // IO ports
     {
-        if ( addr >= mmuPage0 )
+        if ( addr == vidPalData )
         {
-            return pages[ addr - mmuPage0 ];
+            return pal16[ ports[ vidPalPtr - portStart ] & 0xFF ];
         }
-        else if ( addr == vidPalData )
+        else if ( addr == portInput )
         {
-            return pal16[ mem[ vidPalPtr ] & 0xFF ];;
+            // read from input-output port
+            int port = ports[ portInput - portStart ];
+            // find first set bit
+            int pos = 0;
+            for ( int i = 0; i < 16; i++ )
+            {
+                if ( port & 1 )
+                    break;
+                port >>= 1;
+                pos++;
+            }
+            return inputs[ pos & 0xF ];
         }
+        else
         {
-            return mem[ addr ]; // direct read
+            return ports[ addr - portStart ]; // direct read
         }
     }
     else
@@ -44,15 +61,15 @@ void Simpleton::SimpXMMU::write(mWord addr, mWord data)
     {
         if ( addr >= mmuPage0 )
         {
-            pages[ addr - mmuPage0 ] = data % pagesCount;
+            ports[ addr - portStart ] = data % pagesCount; // truncate to real addr space
         }
         else if ( addr == vidPalData )
         {
-            pal16[ mem[ vidPalPtr ] & 0xFF ] = data;
-            pal32[ mem[ vidPalPtr ] & 0xFF ] = ((data << 9) & 0xF80000) | ((data << 6) & 0xF800) | ((data << 3) & 0xF8);
+            pal16[ ports[ vidPalPtr - portStart ] & 0xFF ] = data;
+            pal32[ ports[ vidPalPtr - portStart ] & 0xFF ] = ((data << 9) & 0xF80000) | ((data << 6) & 0xF800) | ((data << 3) & 0xF8);
         }
         else
-            mem[ addr ] = data; // direct write
+            ports[ addr - portStart ] = data; // direct write
     }
     else
     {
@@ -65,15 +82,32 @@ mWord *Simpleton::SimpXMMU::getPtr(uint32_t addr)
     return &mem[ addr ];
 }
 
+void SimpXMMU::setInputBit(bool bit, mWord addr)
+{
+    if ( bit )
+    {
+        inputs[ (addr >> 4) & 0xF ] |= (1 << (addr & 0xF));
+    }
+    else
+    {
+        inputs[ (addr >> 4) & 0xF ] &= ~(1 << (addr & 0xF));
+    }
+}
+
+void SimpXMMU::setInputWord(mWord data, mWord idx)
+{
+    inputs[ idx & 0xF ] = data;
+}
+
 void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
 {
     const mWord       *pal16 = mmu.getPalPtr16();
     const uint32_t    *pal32 = mmu.getPalPtr32();
     bool need_draw = (pal16 != nullptr) || (pal32 != nullptr);
-    int page = (mmu.read( mmu.vidBitmapPage ) % mmu.getPagesCount()) & 0xFFFE;
+    int page = (mmu.read( vidBitmapPage ) % mmu.getPagesCount()) & 0xFFFE;
     mWord *bitmap = mmu.getPtr( mmu.pageSize * page );
-    page = mmu.read( mmu.vidCharmapPage ) % mmu.getPagesCount();
-    mWord *charmap = mmu.getPtr( mmu.pageSize * page + (mmu.read( mmu.vidCharmapAddr ) & 0001110000000000 ) );
+    page = mmu.read( vidCharmapPage ) % mmu.getPagesCount();
+    mWord *charmap = mmu.getPtr( mmu.pageSize * page + ( mmu.read( vidCharmapAddr ) & 0b0001110000000000 ) );
 
     // Process VBlank
     for ( int scan_line = 192; scan_line < 312; scan_line++ )
@@ -83,8 +117,8 @@ void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
         clocks += 2 * 448; // skip line
     }
 
-    int scroll_x = mmu.read( mmu.vidScrollX ) & 0xFF;
-    int scroll_y = mmu.read( mmu.vidScrollY ) & 0xFF;
+    int scroll_x = mmu.read( vidScrollX ) & 0xFF;
+    int scroll_y = mmu.read( vidScrollY ) & 0xFF;
 
     int pix_addr = (scroll_y << 8) + (scroll_x);
     // ADDR MASKS:
@@ -131,7 +165,7 @@ void SimpX::stepFrame( mWord *buf16, uint32_t *buf32 )
     cpu.triggerIRQ();
 }
 
-int qtKeyToUSB(int key)
+int qtKeyToUSB( int key, int /*modif*/ )
 {
     int res = 0;
     switch ( key )
@@ -228,7 +262,7 @@ int qtKeyToUSB(int key)
     case Qt::Key_0:
         res = Key_0; break;
     // Primary control keys:
-    case Qt::Key_Enter:
+    case Qt::Key_Return:
         res = Key_ENTER; break;
     case Qt::Key_Escape:
         res = Key_ESC; break;
