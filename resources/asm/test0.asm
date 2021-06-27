@@ -31,8 +31,14 @@ start
             [ portInput ] <- 8
             r0 <- [ portInput ]
             call printHex  ; выведем его на экран
-            r0 <- 13
+            r0 <- 32       ; код пробела
             call printChar ; напечатаем пробел
+
+            [ portInput ] <- 256
+            r0 <- [ portInput ]
+            call printHex  ; выведем его на экран
+            r0 <- 13
+            call printChar ; перевод строки
 
             psw = psw | CPU_HALT ; выждем паузу
             ;psw = psw | CPU_HALT ; выждем паузу

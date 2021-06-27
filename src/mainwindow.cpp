@@ -60,6 +60,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect( ui->glWidget, SIGNAL( keyInput(bool, int, int) ), this, SLOT( on_keyInput(bool, int, int) ) );
     ui->glWidget->installEventFilter( this );
+    connect( QGamepadManager::instance(), SIGNAL( connectedGamepadsChanged() ), this, SLOT( on_gamepadsChanged() ) );
+
+    on_gamepadsChanged();
 
     ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
@@ -159,12 +162,41 @@ void MainWindow::fileContentReady(const QString &fname, const QByteArray &arr)
     }
 }
 
+void applyGamepadKey( Simpleton::mWord &keys, Simpleton::GamePadKeys key, bool flag )
+{
+    if ( flag )
+        keys = keys | key;
+}
+
 void MainWindow::on_Timer()
 {
     fps.tick();
     statusLabel->setText( QStringLiteral( "fps: %1, clocks: %2" ).arg( fps.getFps() ).arg( simp.getClocks() ) );
     if ( run )
     {
+        // set gamepads buttons
+        Simpleton::mWord gpKeys = 0;
+        for ( auto &gpad: gamepads )
+        {
+            applyGamepadKey( gpKeys, Simpleton::GPK_LEFT,   gpad.buttonLeft() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_RIGHT,  gpad.buttonRight() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_UP,     gpad.buttonUp() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_DOWN,   gpad.buttonDown() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_A,      gpad.buttonA() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_B,      gpad.buttonB() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_SELECT, gpad.buttonSelect() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_START,  gpad.buttonStart() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_X,      gpad.buttonX() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_Y,      gpad.buttonY() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_L1,     gpad.buttonL1() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_R1,     gpad.buttonR1() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_L2,     gpad.buttonL2() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_R2,     gpad.buttonR2() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_L3,     gpad.buttonL3() );
+            applyGamepadKey( gpKeys, Simpleton::GPK_R3,     gpad.buttonR3() );
+        }
+        simp.getMMU().setInputWord( 8, gpKeys );
+
 #if PPU_SOFT_RENDER == 1
         simp.stepFrame( nullptr, (uint32_t *) ui->glWidget->getImage().bits() );
 #else
@@ -392,7 +424,41 @@ void MainWindow::on_keyInput(bool pressed, int key, int modif )
     int usbKey = Simpleton::qtKeyToUSB( key, modif );
     if ( usbKey != 0 )
     {
-        simp.getMMU().setInputBit( pressed, usbKey );
+        simp.getMMU().setInputBit( usbKey, pressed );
+    }
+}
+
+void MainWindow::on_gamepadsChanged()
+{
+    // remove disconnected gamepads
+    auto it = gamepads.begin();
+    while ( it != gamepads.end() )
+    {
+        if ( !it->isConnected() )
+        {
+            it = gamepads.erase( it );
+            logStr( QStringLiteral( "Gamepad %1 removed.\n" ).arg( it->name() ) );
+        }
+        else
+            it++;
+    }
+    QList<int> ids = QGamepadManager::instance()->connectedGamepads();
+    for ( auto i: ids )
+    {
+        bool found = false;
+        for ( auto &gpad: gamepads )
+        {
+            if ( gpad.deviceId() == i )
+            {
+                found = true;
+                break;
+            }
+        }
+        if ( !found )
+        {
+            gamepads.emplace_back( i, nullptr );
+            logStr( QStringLiteral( "Gamepad #%1 connected (total: %2)." ).arg( i ).arg( gamepads.size() ) );
+        }
     }
 }
 

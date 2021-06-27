@@ -12,6 +12,7 @@
 #include "simpx.h"
 #include "fileset.h"
 #include <QTimer>
+#include <QGamepad>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,7 +30,7 @@ class MainWindow : public QMainWindow
     bool run = false;
     QString lastOpenFile;
     QTimer timer;
-    //std::shared_ptr< FileSetProvider > files;
+    std::list< QGamepad > gamepads;
 
     void setViewSize( int coef );
 
@@ -78,6 +79,8 @@ private slots:
     void on_tabWidget_currentChanged(int index);
 
     void on_keyInput( bool pressed, int key, int modif );
+
+    void on_gamepadsChanged();
 
 private:
     Ui::MainWindow *ui;

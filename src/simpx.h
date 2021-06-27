@@ -146,12 +146,12 @@ enum GamePadKeys
     GPK_START       = 1 << 9,
     GPK_X           = 1 << 6,
     GPK_Y           = 1 << 7,
-    GPK_LB          = 1 << 10,
-    GPK_RB          = 1 << 11,
-    GPK_LT          = 1 << 12,
-    GPK_RT          = 1 << 13,
-    GPK_LX          = 1 << 14,
-    GPK_LY          = 1 << 15
+    GPK_L1          = 1 << 10,
+    GPK_R1          = 1 << 11,
+    GPK_L2          = 1 << 12,
+    GPK_R2          = 1 << 13,
+    GPK_L3          = 1 << 14,
+    GPK_R3          = 1 << 15
 };
 
 enum InputSlots
@@ -247,8 +247,8 @@ public:
     void write(mWord addr, mWord data) override;
     mWord *getPtr(uint32_t addr) override;
     mWord getPagesCount() { return pagesCount; };
-    void setInputBit( bool bit, mWord idx );
-    void setInputWord( mWord data, mWord idx );
+    void setInputBit( mWord adds, bool bit );
+    void setInputWord( mWord idx, mWord data );
 };
 
 class SimpX

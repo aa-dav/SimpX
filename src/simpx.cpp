@@ -82,7 +82,7 @@ mWord *Simpleton::SimpXMMU::getPtr(uint32_t addr)
     return &mem[ addr ];
 }
 
-void SimpXMMU::setInputBit(bool bit, mWord addr)
+void SimpXMMU::setInputBit(mWord addr, bool bit)
 {
     if ( bit )
     {
@@ -94,7 +94,7 @@ void SimpXMMU::setInputBit(bool bit, mWord addr)
     }
 }
 
-void SimpXMMU::setInputWord(mWord data, mWord idx)
+void SimpXMMU::setInputWord(mWord idx, mWord data)
 {
     inputs[ idx & 0xF ] = data;
 }
