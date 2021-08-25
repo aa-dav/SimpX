@@ -67,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
     ui->codeEditor->setWordWrapMode( QTextOption::NoWrap );
+    ui->codeEditor->setTabReplace( false );
+    ui->codeEditor->setAutoIndentation( true );
+    ui->codeEditor->setAutoParentheses( false );
 
     Q_INIT_RESOURCE( main );
 
@@ -424,7 +427,7 @@ void MainWindow::on_keyInput(bool pressed, int key, int modif )
     int usbKey = Simpleton::qtKeyToUSB( key, modif );
     if ( usbKey != 0 )
     {
-        simp.getMMU().setInputBit( usbKey, pressed );
+        simp.getMMU().setInputBit( usbKey - 1, pressed );
     }
 }
 

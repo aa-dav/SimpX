@@ -137,6 +137,7 @@ private:
 		}
 		int getLine() { return lineNum; };
 		std::string getName() { return name; };
+        std::string getUnresolvedName();
 		bool isReady() { return type == Literal; };
 		bool resolve( Assembler &assembler );
 		void setValue( int val )

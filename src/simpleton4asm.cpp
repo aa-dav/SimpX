@@ -87,7 +87,7 @@ void Assembler::parseEnd()
 	for ( auto &fwd : forwards )
 	{
 		if ( !fwd.node.isReady() )
-			throw ParseError( fwd.getLine(), "unresolved forward reference '" + fwd.node.getName() + "'!" );
+            throw ParseError( fwd.getLine(), "unresolved forward reference '" + fwd.node.getUnresolvedName() + "'!" );
 		if ( fwd.type == ForwardReference::CondAdd )
 		{
 			int offs = (fwd.node.getValue() & 0xFFFF) - fwd.addr - 1;
@@ -124,6 +124,15 @@ Assembler::Identifier *Assembler::findIdentifier( const std::string &name, bool 
 	}
 	return res;
 };
+
+std::string Assembler::ExprNode::getUnresolvedName()
+{
+    if ( left && !left->isReady() )
+        return left->getUnresolvedName();
+    if ( right && !right->isReady() )
+        return right->getUnresolvedName();
+    return getName();
+}
 
 bool Assembler::ExprNode::resolve( Assembler &assembler )
 {
@@ -259,7 +268,22 @@ std::string Assembler::extractNextLexem( const std::string &parseString, size_t 
 			}
 		};
 	}
-	else
+    else if ( sym == '\'' )
+    {
+         res += parseString[ parsePos ];
+         if ( ++parsePos >= parseString.length() )
+             throw ParseError( lineNum, "unexpected end of char '" + res + "'!" );
+         res += parseString[ parsePos ];
+         if ( ++parsePos >= parseString.length() )
+             throw ParseError( lineNum, "unexpected end of char '" + res + "'!" );
+         if ( parseString[ parsePos ] == '\'' )
+         {
+            parsePos++;
+         }
+         else
+             throw ParseError( lineNum, "unterminated char '" + res + "'!" );
+    }
+    else
 	{
 		while ( !isspace( parseString[ parsePos ] ) )
 		{
@@ -324,14 +348,22 @@ void Assembler::putBackLexem()
 
 static bool lexemIsNumberLiteral( const std::string &lexem  )
 {
-    return (lexem[ 0 ] == '$') || isdigit( lexem[ 0 ] ) || ( (lexem[ 0 ] == '-') && (lexem.size() > 1) && (isdigit( lexem[ 1 ] )) );
+    return (lexem[ 0 ] == '$') || isdigit( lexem[ 0 ] ) ||
+            ( (lexem[ 0 ] == '-') && (lexem.size() > 1) && (isdigit( lexem[ 1 ] )) ) ||
+            ( (lexem.size() == 2) && (lexem[ 0 ] == '\'') );
 }
 
 static int parseNumberLiteral( const std::string &lexem )
 {
 	int res;
-	if ( lexem[ 0 ] == '$' )
+    if ( (lexem.size() == 2) && (lexem[ 0 ] == '\'') )
+    {
+        res = lexem[ 1 ];
+    }
+    else if ( lexem[ 0 ] == '$' )
+    {
 		res = strtol( lexem.c_str() + 1, nullptr, 16 );
+    }
 	else
     {
         if ( lexem[ lexem.length() - 1 ] == 'b' )
@@ -454,6 +486,8 @@ Assembler::ExprNode Assembler::parseExpr( int addrForForward, bool tryToResolve 
 	{
 		// compound expression met!
 		res = parseBrackets( false );
+        if ( addrForForward != -1 )
+            forwards.emplace_back( res, addrForForward );
 	}
 	else
 	{
@@ -499,9 +533,11 @@ void Assembler::processArgument( const std::string &kind, const int reg, const E
 	else if (	(!newSyntax && (stage == 3)) ||
 			(newSyntax && (stage == 4)) )
 	{
-		if ( Instruction::isInplaceImmediate( cmd ) && indirect )
-			throw ParseError( lineNum, "inplace immediate cannot be indirect!" );
-		x = reg;
+        //if ( Instruction::isInplaceImmediate( cmd ) && indirect )
+        //	throw ParseError( lineNum, "inplace immediate cannot be indirect!" );
+        if ( Instruction::isInplaceImmediate( cmd ) && (reg != IMMED) )
+            throw ParseError( lineNum, "inplace immediate must be immediate!" );
+        x = reg;
 		if ( expr )
 			nodeX = *expr;
 	}
@@ -693,7 +729,7 @@ void Assembler::parseLine()
 								} else if ( cmd == OP_RRC ) {
 									cmd = OP_RRCI;
 								} else
-									ParseError( lineNum, "'<=' is used with wrong operator '" + lexem + "'!" );
+                                    throw ParseError( lineNum, "'<=' is used with wrong operator '" + lexem + "'!" );
 							} else if ( eqSign == 2 ) {
 								if ( cmd == OP_ADD ) {
 									cmd = OP_ADDIS;
@@ -701,7 +737,7 @@ void Assembler::parseLine()
 									cmd = OP_ADDIS;
 									invertX = true;
 								} else
-									ParseError( lineNum, "'<-' is used with wrong operator '" + lexem + "'!" );
+                                    throw ParseError( lineNum, "'<-' is used with wrong operator '" + lexem + "'!" );
 							}
 						}
 					}
