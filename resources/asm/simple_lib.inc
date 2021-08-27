@@ -1,18 +1,23 @@
 #include "simpx.inc"
-
+		mode new	; "математический" режим ассемблера
 		org $8000	; Помещаем текущий адрес в $8000
-#include "font-00.asm"		; загружаем битмап шрифта в $8000...
+#include "font-00.asm"	; загружаем битмап шрифта в $8000...
 
 		org $0000	; Возвращаемся в адрес $0000 (стартовая точка процессора)
-		mode new	; "математический" режим ассемблера
-
-		psw <- $0000	; выключим прерывания
+		psw = $0000	; выключим прерывания
 		sp <- $8000	; установим указатель на стек в $8000
-		[ vidBitmapPage ]   <- 4	; настраиваем видеобитмап на $8000-BFFF
-		[ vidCharmapPage ]  <- 6	; настраиваем страницу чармапа на $C000
-		[ vidCharmapAddr ]  <- 0	; и адрес в странице на $C000-C3FF
 		call simpleInit	; инициализируем простую библиотеку ввода-вывода
 		pc <- start	; и переходим на начало программы
+
+irqTimer		dw 0		; счётчик вызовов прерываний
+irqExtHandler	dw 0		; адрес пользовательского обработчика прерываний
+		org $0010		; адрес обработчика прерываний
+irqHandler	void <= [ irqExtHandler ]	; проверим на 0 пользовательский обработчик
+		jz .default		; если он 0 - идём на системный обработчик
+		pc <- [ irqExtHandler ]	; иначе прыгаем в пользовательский
+.default		[ irqTimer ] <- [ irqTimer ] + 1	; увеличим таймер
+		psw <- [ sp ]			; восстанавливаем psw
+		pc <- [ sp ]			; выходим из прерывания
 
 ; palette0 - простая палитра на 16 первых цветов по типу спектрумовской
 ; перебирает все комбинации вкл/выкл каналов RGB в первых 8 слотах
@@ -58,25 +63,28 @@ palette0	; первые 16 слотов палитры, формат RRRRRGGGGGB
 ;	r1 - начальный слот палитры
 ;	r2 - количество слотов палитры к заполнению
 loadPalette 
-		[ sp ] <- r0
+		[ sp ] <- r0	; сохраняем регистры в стек
 		[ sp ] <- r1
 		[ sp ] <- r2
-.loop		[ vidPalPtr ] <- r1
-		r1 <- r1 + 1
-		[ vidPalData ] <- [ r0 ]
-		r0 <- r0 + 1
-		r2 <= r2 + -1
-		jnz .loop
-		r2 <- [ sp ]
+.loop		[ vidPalPtr ] <- r1	; активируем слот палитры
+		r1 <- r1 + 1	; заранее переходим к следующему
+		[ vidPalData ] <- [ r0 ]	; пишем данные из буфера
+		r0 <- r0 + 1	; переходим к следующий
+		r2 <= r2 - 1	; уменьшаем счётчик
+		jnz .loop		; и если он не ноль - повторяем итерацию
+		r2 <- [ sp ]	; восстанавливаем регистры из стека
 		r1 <- [ sp ]
 		r0 <- [ sp ]
-		ret	 
+		ret	 	; выходим из процедуры
 
 ; simpleInit - инициализация простой тестовой среды выполнения
-simpleInit
-		[ sp ] <- r0
+simpleInit	[ sp ] <- r0
 		[ sp ] <- r1
 		[ sp ] <- r2
+		[ vidBitmapPage ]   <- 4	; настраиваем видеобитмап на $8000-BFFF
+		[ vidCharmapPage ]  <- 6	; настраиваем страницу чармапа на $C000
+		[ vidCharmapAddr ]  <- 0	; и адрес в странице на $C000-C3FF
+		psw = psw | IRQ_ENABLED	; включим прерывания
 		; загрузим простую палитру
 		r0 <- palette0
 		r1 <- 0		   
@@ -101,7 +109,7 @@ textBase	= $C000
 initTextMode
 		[ sp ] <- r0
 		[ sp ] <- r1
-		r0 <- 0
+		r0 = r0 - r0
 		[ vidScrollX ] <- r0
 		[ vidScrollY ] <- r0
 		[ textAttrs ] <- r0
@@ -111,7 +119,7 @@ initTextMode
 		r1 <- 1024
 .loop		[ r0 ] <- 0
 		r0 <- r0 + 1
-		r1 <= r1 + -1
+		r1 <= r1 - 1
 		jnz .loop
 		r1 <- [ sp ]
 		r0 <- [ sp ]
@@ -128,7 +136,7 @@ printChar
 		jnz .not_cr
 		; carriage return
 		r2 = textBase + r1
-.cr_loop	[ r2 ] <- [ textAttrs ]
+.cr_loop		[ r2 ] <- [ textAttrs ]
 		r2 <- r2 + 1
 		r1 <- r1 + 1
 		void = r1 & 11111b
@@ -151,7 +159,7 @@ printChar
 .clear_loop	[ r1 ] <- 0
 		r1 <- r1 + 1
 		r2 <- r2 + 1
-		r0 <= r0 + -1
+		r0 <= r0 - 1
 		jnz .clear_loop
 		r2 = r2 & $3FF
 		[ textEnd ] <- r2
@@ -169,25 +177,25 @@ printHex
 		[ sp ] <- r1
 		r1 <- r0
 
-		r1 <= r1 >> -4
+		r1 <= r1 >> 12
 		r0 = r1 & $000F
 		r0 = hexNumbers + r0
 		r0 <- [ r0 ]
 		call printChar
 
-		r1 <= r1 >> -4
+		r1 <= r1 >> 12
 		r0 = r1 & $000F
 		r0 = hexNumbers + r0
 		r0 <- [ r0 ]
 		call printChar
 
-		r1 <= r1 >> -4
+		r1 <= r1 >> 12
 		r0 = r1 & $000F
 		r0 = hexNumbers + r0
 		r0 <- [ r0 ]
 		call printChar
 
-		r1 <= r1 >> -4
+		r1 <= r1 >> 12
 		r0 = r1 & $000F
 		r0 = hexNumbers + r0
 		r0 <- [ r0 ]
@@ -211,9 +219,12 @@ zstrPrint	[ sp ] <- r0
 		r0 <- [ sp ]
 		ret		  
 
-LastKey		dw 0
-LastShifts	dw 0
-; readKeys - считать кнопку
+LastKey		dw 0	; последняя нажатая кнопка
+LastShifts	dw 0	; последние нажатые шифты
+
+; readKey - считать код нажатой кнопки
+; обновляет LastKey и LastShift
+; выход:	r0 - код первой нажатой кнопки (0 если нет нажатий)
 readKey		[ sp ] <- r1
 		[ sp ] <- r2
 		[ sp ] <- r3
@@ -239,20 +250,27 @@ readKey		[ sp ] <- r1
 		jnc .loop_found
 		r0 <- r3
 .end		; в r0 результат
-		void = r0 - [ LastKey ]
-		jz .skip_res
 		[ LastKey ] <- r0
-		pc <- .exit
-.skip_res		r0 = r0 - r0
 .exit		r3 <- [ sp ]
 		r2 <- [ sp ]
 		r1 <- [ sp ]
 		ret
-		
-keysToChars	dw 0	; shift
-		dw 0	; control
-		dw 0	; alt
-		dw ( 'a' + ( 'A' << 8 ) )
+
+; readKeyOnce - считать нажатие клавиши без повторов
+; обновляет LastKey и LastShifts
+; возвращает 0, если клавиша была нажата в предыдущий вызов
+; выход:	r0 - код нажатой клавиши				
+readKeyOnce	[ sp ] <- r1
+		r1 <- [ LastKey ]
+		call readKey
+		void = r1 - r0
+		jnz .end
+		r0 = r0 - r0
+.end		r1 <- [ sp ]
+		ret
+
+; keysToChars - таблица соответствий кодов клавиш и ASCII-символов
+keysToChars	dw ( 'a' + ( 'A' << 8 ) ) ; 4th
 		dw ( 'b' + ( 'B' << 8 ) )
 		dw ( 'c' + ( 'C' << 8 ) )
 		dw ( 'd' + ( 'D' << 8 ) )
@@ -289,16 +307,16 @@ keysToChars	dw 0	; shift
 		dw ( '9' + ( '(' << 8 ) )
 		dw ( '0' + ( ')' << 8 ) )
 		dw ( 13 + ( 13 << 8 ) )
-		dw 0	; esc
-		dw 0	; bksp
-		dw 0	; tab
+		dw ( 27 + ( 27 << 8 ) ) ; esc
+		dw ( 8 + ( 8 << 8 ) ) ; bksp
+		dw ( 9 + ( 9 << 8 ) ) ; tab
 		dw ( ' ' + ( ' ' << 8 ) )
 		dw ( '-' + ( '_' << 8 ) )
 		dw ( '=' + ( '+' << 8 ) )
 		dw ( '[' + ( '{' << 8 ) )
 		dw ( ']' + ( '}' << 8 ) )
 		dw ( '\' + ( '|' << 8 ) )
-		dw 0	; hashtilde ???
+		dw ( '#' + ( '~' << 8 ) ) ; hashtilde
 		dw ( ';' + ( ':' << 8 ) )
 		dw ( ''' + ( '"' << 8 ) )
 		dw ( '`' + ( '~' << 8 ) )
@@ -307,4 +325,25 @@ keysToChars	dw 0	; shift
 		dw ( '/' + ( '?' << 8 ) )
 		dw 0	; capslock
 
-
+; decodeLastKey - возвращает ASCII-код последней нажатой клавиши
+; выход:	r0 - ASCII-код из LastKey
+decodeLastKey	r0 = ( keysToChars - 4 ) + [ LastKey ]
+		r0 <- [ r0 ]
+		void = [ LastShifts ] & 2 ; shift
+		jz .skip_shift
+		r0 = r0 >> 8
+.skip_shift	r0 = r0 & $FF		
+		ret
+		
+; inputChar - блокирующий ввод ASCII-символа с клавиатуры
+inputChar		void = [ irqTimer ] & 10000b
+		r0 <- ' '
+		jz .show_cursor
+		r0 <- '_'
+.show_cursor	call printChar
+		[ textPos ] <- [ textPos ] - 1
+		call readKeyOnce
+		r0 <= r0
+		jz inputChar
+		call decodeLastKey
+		ret

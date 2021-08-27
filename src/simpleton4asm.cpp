@@ -726,7 +726,10 @@ void Assembler::parseLine()
 							if ( eqSign == 1 ) {
 								if ( cmd == OP_ADD ) {
 									cmd = OP_ADDI;
-								} else if ( cmd == OP_RRC ) {
+                                } else if ( cmd == OP_SUB ) {
+                                    cmd = OP_ADDI;
+                                    invertX = true;
+                                } else if ( cmd == OP_RRC ) {
 									cmd = OP_RRCI;
 								} else
                                     throw ParseError( lineNum, "'<=' is used with wrong operator '" + lexem + "'!" );
@@ -796,8 +799,16 @@ void Assembler::parseLine()
 		if ( invertX )
 			nodeX.setValue( -nodeX.getValue() );
 		// inplace immediate mode
-		if ( (nodeX.getValue() < -8) || (nodeX.getValue() > +7) )
-			throw ParseError( lineNum, "inplace immediate X is too big!" );
+        if ( cmd == OP_RRCI )
+        {
+            if ( (nodeX.getValue() < 0) || (nodeX.getValue() > +15) )
+                throw ParseError( lineNum, "inplace immediate X is too big!" );
+        }
+        else
+        {
+            if ( (nodeX.getValue() < -8) || (nodeX.getValue() > +7) )
+                throw ParseError( lineNum, "inplace immediate X is too big!" );
+        }
 		x = nodeX.getValue() & 0b1111;
 	}
 
