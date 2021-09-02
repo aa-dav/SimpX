@@ -9,9 +9,9 @@
 #include "simp4highlighter.h"
 #include "simpleton4disasm.h"
 
-#if BUILD_WEBASSEMBLY != 1
+#if SIMPX_NO_INI == 0
 static const char* orgName = "AlxSoft";
-static const char* domName = "alxhost.tk";
+//static const char* domName = "alxhost.tk";
 static const char* appName = "SimpX";
 #endif
 
@@ -78,11 +78,13 @@ MainWindow::MainWindow(QWidget *parent)
     INIT_PREDEF_FILE( "font-00.asm" );
     INIT_PREDEF_FILE( "simple_lib.inc" );
 
-#if BUILD_WEBASSEMBLY == 1
+#if SIMPX_FAKE_FS == 1
     asm4.setSourceFileProvider( std::make_shared<FileSetProvider>( ui->filesList ) );
 #else
     asm4.setSourceFileProvider( std::make_shared<Simpleton::FileProviderStd>() );
+#endif
 
+#if SIMPX_NO_INI == 0
     INIT_SETTINGS( sett );
     sett.beginGroup( "General" );
     lastOpenDir = sett.value( "lastOpenDir", "" ).toString();
@@ -104,8 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-#if BUILD_WEBASSEMBLY == 1
-#else
+#if SIMPX_NO_INI == 0
     INIT_SETTINGS( sett );
     sett.beginGroup( "General" );
     sett.setValue( "lastOpenDir",   lastOpenDir );
@@ -200,7 +201,7 @@ void MainWindow::on_Timer()
         }
         simp.getMMU().setInputWord( 8, gpKeys );
 
-#if PPU_SOFT_RENDER == 1
+#if SIMPX_SOFT_RENDER == 1
         simp.stepFrame( nullptr, (uint32_t *) ui->glWidget->getImage().bits() );
 #else
         simp.stepFrame( (uint16_t *) ui->glWidget->getImage().bits(), nullptr );
@@ -227,7 +228,7 @@ void MainWindow::on_actionQuit_triggered()
 void MainWindow::on_actionOpen_triggered()
 {
     run = false;
-#if BUILD_WEBASSEMBLY == 1
+#if SIMPX_FAKE_FS == 1
     QFileDialog::getOpenFileContent(
                 "All files (*.*) ;; Assembler files (*.asm *.inc)",
                 [&](const QString &fname, const QByteArray &arr) { fileContentReady( fname, arr ); } );

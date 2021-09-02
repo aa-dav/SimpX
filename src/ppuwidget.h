@@ -3,7 +3,7 @@
 
 #include "simpx.h"
 
-#if PPU_SOFT_RENDER == 1
+#if SIMPX_SOFT_RENDER == 1
 
 #include "QWidget"
 

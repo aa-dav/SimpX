@@ -4,7 +4,7 @@
 #include "font-00.asm"	; загружаем битмап шрифта в $8000...
 
 		org $0000	; Возвращаемся в адрес $0000 (стартовая точка процессора)
-		psw = $0000	; выключим прерывания
+		psw <- $0000	; выключим прерывания
 		sp <- $8000	; установим указатель на стек в $8000
 		call simpleInit	; инициализируем простую библиотеку ввода-вывода
 		pc <- start	; и переходим на начало программы
@@ -78,7 +78,7 @@ loadPalette
 		ret	 	; выходим из процедуры
 
 ; simpleInit - инициализация простой тестовой среды выполнения
-simpleInit	[ sp ] <- r0
+simpleInit	[ sp ] <- r0	; сохраняем регистры в стек
 		[ sp ] <- r1
 		[ sp ] <- r2
 		[ vidBitmapPage ]   <- 4	; настраиваем видеобитмап на $8000-BFFF
@@ -92,81 +92,117 @@ simpleInit	[ sp ] <- r0
 		call loadPalette
 		; инициализируем текстовую раскладку видеоданных
 		call initTextMode
-		r2 <- [ sp ]
+		r2 <- [ sp ]		; восстанавливаем регистры из стека
 		r1 <- [ sp ]
 		r0 <- [ sp ]
-		ret
+		ret			; выходим из процедуры
 		
-textPos		dw 0
-textEnd		dw ( 24 * 32 )
-textAttrs	dw 0
-textBase	= $C000
+textBase		= $C000	; адрес начала текстовых данных экрана
+textPos		dw textBase	; текущий адрес курсора в текстовых данных
+textAttrs		dw 0	; верхняя тетрада - атрибуты символа к выводу
+textScreenSize	= 32 * 24	; размер видимого текста на экране в символах
 
 ; initTextMode - инициализируем "текстовый режим"
 ; на самом деле в SimpX это не более чем упорядоченная определенным образом 
 ; раскладка видеоданных (чармап заполнен не линейно как в графическом режиме, а каждый
 ; его элемент и есть символ и его атрибуты цветности)
 initTextMode
-		[ sp ] <- r0
+		[ sp ] <- r0		; сохраним регистры
 		[ sp ] <- r1
-		r0 = r0 - r0
-		[ vidScrollX ] <- r0
-		[ vidScrollY ] <- r0
-		[ textAttrs ] <- r0
-		[ textPos ] <- r0
-		[ textEnd ] <- ( 24 * 32 )
-		r0 <- $C000
-		r1 <- 1024
-.loop		[ r0 ] <- 0
-		r0 <- r0 + 1
-		r1 <= r1 - 1
-		jnz .loop
-		r1 <- [ sp ]
+		r0 = r0 - r0		; обнулим r0
+		[ vidScrollX ] <- r0	; обнулим скроллинг экрана по X
+		[ vidScrollY ] <- r0	; обнулим скроллинг экрана по Y
+		[ textAttrs ] <- r0		; обнулим атрибуты
+		r0 <- textBase		; r0 - адрес начала текста
+		[ textPos ] <- r0		; курсора в начало текстовой области
+		r1 <- ( 32 * 32 )		; r1 - полный размер текстовой области
+.loop		[ r0 ] <- 0		; обнулим память
+		r0 <- r0 + 1		; увеличим r0
+		r1 <= r1 - 1		; уменьшим r1 обновив флаги
+		jnz .loop			; если не получился ноль - повторяем цикл
+		r1 <- [ sp ]		; восстанавливаем регистры из стека
 		r0 <- [ sp ]
-		ret
+		ret			; выходим из процедуры
+		
+		
 
 ; printChar - печать символа в r0 (ascii) в текстовом режиме
 ; in: r0 - символ для печати
-printChar
-		[ sp ] <- r0
-		[ sp ] <- r1
+printChar		[ sp ] <- r0
+		[ sp ] <- r1		; сохраним регистры r0 и r1
+		r0 = r0 - 32		; поправим код символа к началу битмапа
+		r1 <- [ textPos ]		; r1 - адрес курсора на экране
+		[ r1 ] = r0 | [ textAttrs ]	; запишем в знакоместо символ с атрибутами
+		r1 <- r1 + 1		; увеличим адрес курсора
+		; и сравним его с адресом последнего символа на экране:
+		void = ( textBase + textScreenSize ) - r1
+		jnc .end			; если переполнения нет - идём на выход
+		; иначе настало время проскроллить экран на одну строку вверх...
 		[ sp ] <- r2
-		r1 <- [ textPos ]
-		void = r0 - 13
-		jnz .not_cr
-		; carriage return
-		r2 = textBase + r1
-.cr_loop		[ r2 ] <- [ textAttrs ]
-		r2 <- r2 + 1
-		r1 <- r1 + 1
-		void = r1 & 11111b
-		jnz .cr_loop
-		pc <- .check_ovfl
-.not_cr		r0 = r0 +s -32 ; ascii fix
-		r0 = r0 | [ textAttrs ] ; apply attrs
-		r2 = textBase + r1
-		[ r2 ] <- r0
-		r1 <- r1 + 1
-.check_ovfl	r1 = r1 & $3FF
-		[ textPos ] <- r1
-		r2 <- [ textEnd ]
-		void = r2 - r1
-		jnz .end
-		; overflow
-		[ vidScrollY ] = [ vidScrollY ] +s 8
-		r0 <- 32
-		r1 = textBase + r2
-.clear_loop	[ r1 ] <- 0
-		r1 <- r1 + 1
-		r2 <- r2 + 1
-		r0 <= r0 - 1
-		jnz .clear_loop
-		r2 = r2 & $3FF
-		[ textEnd ] <- r2
-.end		r2 <- [ sp ]
-		r1 <- [ sp ]
+		[ sp ] <- r3
+		r2 <- textBase		; куда копируем
+		r3 <- ( textBase + 32 )	; откуда копируем (строка ниже)
+		r0 <- ( 32 * 23 )		; сколько копируем (без последней строки)
+.loop_scroll	[ r2 ] <- [ r3 ]		; копируем слово из памяти в память
+		r2 <- r2 + 1		; инкрементируем r2
+		r3 <- r3 + 1		; инкрементируем r3
+		r0 <= r0 - 1		; уменьшаем счётчик с обновлением флагов
+		jnz .loop_scroll		; и если он не достиг нуля - повторяем цикл
+		r0 <- 32			; нужно очистить последнюю строку
+.loop_clear	[ r2 ] <- 0		; занулим адрес r2 (он изначально где надо)
+		r2 <- r2 + 1		; увеличим r2
+		r0 <= r0 - 1		; уменьшим счётчик с обновлением флагов
+		jnz .loop_clear		; если не 0 - повторяем цикл
+		r1 = r1 - 32		; поднимем указатель курсора на одну строку
+		r3 <- [ sp ]		; восстановим дополнительные регистры из стека
+		r2 <- [ sp ]
+.end		[ textPos ] <- r1		; обновляем адрес курсора на экране
+		r1 <- [ sp ]		; восстанавливаем r1 и r0 из стека
+		r0 <- [ sp ]
+		ret			; выходим из процедуры
+
+; cursorBack - отодвинуть курсор на один символ назад, но не далее чем 
+; левый-верхний угол экрана				
+		; сравним позицию курсора с краем экрана:
+cursorBack	void = [ textPos ] - ( textBase + 1 )	
+		jc .end			; если уже на краю - пропускаем...
+		[ textPos ] <- [ textPos ] - 1
+.end		ret		
+
+; printCr - напечатать пробелов до начала следующей строки
+printCr		[ sp ] <- r0
+		r0 <- ' '
+.loop		call printChar
+		void = [ textPos ] & 11111b
+		jnz .loop
 		r0 <- [ sp ]
 		ret
+
+; printTab - напечатать пробелов до следующей позиции табуляции
+printTab		[ sp ] <- r0
+		r0 <- ' '
+.loop		call printChar
+		void = [ textPos ] & 00111b
+		jnz .loop
+		r0 <- [ sp ]
+		ret
+
+; printBkSp - вернуть курсор назад и стереть символ под ним
+printBkSp		[ sp ] <- r0
+		call cursorBack
+		r0 <- [ textPos ]
+		[ r0 ] <- ( ' ' - 32 )
+		r0 <- [ sp ]
+		ret
+
+; printSpChar - напечатать символ с учётом спец-знаков (ENTER, BACKSPACE и TAB)				
+printSpChar	void = r0 - 13
+		jz printCr
+		void = r0 - 9
+		jz printTab
+		void = r0 - 8
+		jz printBkSp
+		pc <- printChar
 
 hexNumbers	dw "0123456789ABCDEF"			 
 
@@ -207,12 +243,12 @@ printHex
 
 ; zstrPrint - напечатать строку терминирующуюся нулём
 ; in: r0 - указатель на строку				  
-zstrPrint	[ sp ] <- r0
+zstrPrint		[ sp ] <- r0
 		[ sp ] <- r1
 		r1 <- r0
 .loop		r0 <= [ r1 ]
 		jz .end
-		call printChar
+		call printSpChar
 		r1 <- r1 + 1
 		pc <- .loop
 .end		r1 <- [ sp ]
@@ -341,9 +377,14 @@ inputChar		void = [ irqTimer ] & 10000b
 		jz .show_cursor
 		r0 <- '_'
 .show_cursor	call printChar
-		[ textPos ] <- [ textPos ] - 1
+		call cursorBack
 		call readKeyOnce
 		r0 <= r0
 		jz inputChar
+		[ sp ] <- r0
+		r0 <- ' '
+		call printChar
+		call cursorBack
+		r0 <- [ sp ]
 		call decodeLastKey
 		ret

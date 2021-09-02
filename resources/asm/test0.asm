@@ -1,6 +1,6 @@
 #include "simple_lib.inc"
 
-start
+start		; точка входа (!)
 		r0 <- str0    
 		call zstrPrint ; напечатаем строку str0
 
@@ -10,8 +10,13 @@ start
 		[ textAttrs ] <- $0000 ; вернёмся к палитре №0
             
 .loop		call inputChar
-		call printChar ; выведем символ
+		void = r0 - '+'
+		jz .printLine
+		call printSpChar ; выведем символ
 		pc <- .loop    ; бесконечный цикл
+.printLine	r0 <- str1
+		call zstrPrint
+		pc <- .loop		
             
 forever		psw = psw | CPU_HALT ; переводим процессор в режим ожидания
 		pc <- forever

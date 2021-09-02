@@ -5,8 +5,19 @@
 #include <vector>
 #include <QImage>
 
-#define PPU_SOFT_RENDER 1
-#define BUILD_WEBASSEMBLY 1
+#ifdef __EMSCRIPTEN__
+
+#define SIMPX_SOFT_RENDER 1
+#define SIMPX_NO_INI  1
+#define SIMPX_FAKE_FS   1
+
+#else
+
+#define SIMPX_SOFT_RENDER 1
+#define SIMPX_NO_INI  0
+#define SIMPX_FAKE_FS   1
+
+#endif
 
 namespace Simpleton
 {

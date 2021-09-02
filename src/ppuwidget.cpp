@@ -2,7 +2,7 @@
 #include <QMessageBox>
 #include <QKeyEvent>
 
-#if PPU_SOFT_RENDER == 1
+#if SIMPX_SOFT_RENDER == 1
 
 #include <QPainter>
 

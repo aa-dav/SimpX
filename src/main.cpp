@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[])
 {
-#if PPU_SOFT_RENDER != 1
+#if SIMPX_SOFT_RENDER != 1
     QSurfaceFormat fmt;
     fmt.setRenderableType( QSurfaceFormat::OpenGL );
     fmt.setVersion( 3, 3 );
