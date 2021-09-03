@@ -16,14 +16,13 @@ zstrPrint		[ sp ] <- r0
 		
 ; zstrLength - длина ASCIIZ-строки
 ; вход:	r0 - указатель на начало строки
-; выход:	r0 - длина строки
-;	r1 - указатель на конец строки (символ 0)
-zstrLength	r1 <- r0
-		r0 = r0 - r0
-.loop		void <= [ r1 ]
+; выход:	r0 - указатель на конец строки (символ 0)
+;	r1 - длина строки
+zstrLength	r1 = r1 - r1
+.loop		void <= [ r0 ]
 		jz .end
-		r1 <- r1 + 1
 		r0 <- r0 + 1
+		r1 <- r1 + 1
 		pc <- .loop
 .end		ret		
 

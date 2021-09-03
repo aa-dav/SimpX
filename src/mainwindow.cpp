@@ -77,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     INIT_PREDEF_FILE( "test0.asm" );
     INIT_PREDEF_FILE( "font-00.asm" );
     INIT_PREDEF_FILE( "simple_lib.inc" );
+    INIT_PREDEF_FILE( "zstr.inc" );
 
 #if SIMPX_FAKE_FS == 1
     asm4.setSourceFileProvider( std::make_shared<FileSetProvider>( ui->filesList ) );

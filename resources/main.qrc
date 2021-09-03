@@ -4,5 +4,6 @@
         <file>asm/test0.asm</file>
         <file>asm/font-00.asm</file>
         <file>asm/simple_lib.inc</file>
+        <file>asm/zstr.inc</file>
     </qresource>
 </RCC>
