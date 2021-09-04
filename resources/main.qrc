@@ -1,9 +1,13 @@
 <RCC>
     <qresource prefix="/">
         <file>asm/simpx.inc</file>
-        <file>asm/test0.asm</file>
         <file>asm/font-00.asm</file>
         <file>asm/simple_lib.inc</file>
         <file>asm/zstr.inc</file>
+        <file>asm/test01.asm</file>
+        <file>asm/test02.asm</file>
+        <file>asm/test03.asm</file>
+        <file>asm/test04.asm</file>
+        <file>asm/math.inc</file>
     </qresource>
 </RCC>

@@ -491,6 +491,12 @@ void QCodeEditor::keyPressEvent(QKeyEvent* e) {
       return;
     }
 
+    if (!m_replaceTab && e->key() == Qt::Key_Tab &&
+        e->modifiers() == Qt::NoModifier) {
+      insertPlainText("\t");
+      return;
+    }
+
     // Auto indentation
     int indentationLevel = getIndentationSpaces();
 

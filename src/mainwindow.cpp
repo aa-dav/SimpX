@@ -64,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     on_gamepadsChanged();
 
-    ui->codeEditor->setCompleter( new Simp4Completer() );
+    //ui->codeEditor->setCompleter( new Simp4Completer() );
     ui->codeEditor->setHighlighter( new Simp4Highlighter() );
     ui->codeEditor->setWordWrapMode( QTextOption::NoWrap );
     ui->codeEditor->setTabReplace( false );
@@ -73,11 +73,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     Q_INIT_RESOURCE( main );
 
+    INIT_PREDEF_FILE( "test01.asm" );
+    INIT_PREDEF_FILE( "test02.asm" );
+    INIT_PREDEF_FILE( "test03.asm" );
+    INIT_PREDEF_FILE( "test04.asm" );
     INIT_PREDEF_FILE( "simpx.inc" );
-    INIT_PREDEF_FILE( "test0.asm" );
-    INIT_PREDEF_FILE( "font-00.asm" );
     INIT_PREDEF_FILE( "simple_lib.inc" );
     INIT_PREDEF_FILE( "zstr.inc" );
+    INIT_PREDEF_FILE( "math.inc" );
+    INIT_PREDEF_FILE( "font-00.asm" );
 
 #if SIMPX_FAKE_FS == 1
     asm4.setSourceFileProvider( std::make_shared<FileSetProvider>( ui->filesList ) );
