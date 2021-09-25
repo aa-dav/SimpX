@@ -9,5 +9,7 @@
         <file>asm/test03.asm</file>
         <file>asm/test04.asm</file>
         <file>asm/math.inc</file>
+        <file>asm/test05.asm</file>
+        <file>asm/test06.asm</file>
     </qresource>
 </RCC>

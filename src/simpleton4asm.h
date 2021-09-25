@@ -82,9 +82,170 @@ public:
 	const std::string &getReason() const { return reason; };
 };
 
+class Identifier;
+class Assembler;
+
+class ExprNode
+{
+private:
+    int type;
+    std::string name;
+    int value;
+    int lineNum;
+    std::shared_ptr< ExprNode > left, right;
+
+public:
+    enum Type
+    {
+        Literal,
+        Symbol,
+        Operator
+    };
+
+    void setup( int _lineNum )
+    {
+        type = Literal;
+        value = 0;
+        name.clear();
+        lineNum = _lineNum;
+        left.reset();
+        right.reset();
+    }
+    int getLine() const { return lineNum; };
+    std::string getName() const { return name; };
+    std::string getUnresolvedName() const;
+    bool isReady() const { return type == Literal; };
+    bool resolve( Assembler &assembler );
+    void setValue( int val )
+    {
+        type = Literal;
+        value = val;
+    }
+    int getValue() const
+    {
+        if ( type != Literal )
+            throw ParseError( lineNum, "cannot resolve expression '" + name + "'!" );
+        return value;
+    };
+    std::string getDesc() const
+    {
+        std::string res;
+        if ( type == Literal )
+        {
+            res = std::to_string( value );
+        }
+        else if ( type == Symbol )
+        {
+            res = name;
+        }
+        else if ( type == Operator )
+        {
+            res = "( " + left->getDesc() + " " + name + " " + right->getDesc() + " )";
+        }
+        return res;
+    }
+    void setSymbol( const std::string &_name )
+    {
+        type = Symbol;
+        name = _name;
+    }
+    void setArgs( std::shared_ptr< ExprNode > _left, std::shared_ptr< ExprNode > _right )
+    {
+        left = _left;
+        right = _right;
+    }
+
+    ExprNode(): type( Literal ), value( 0 ), lineNum( 0 ) {};
+    ExprNode( int _lineNum ): type( Literal ), value( 0 ), lineNum( _lineNum ) {};
+    ExprNode( Type _type, std::string _name, int _value, int _lineNum ): type( _type ), name( _name ), value( _value ), lineNum( _lineNum ) {};
+    ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
+    void operator=( const ExprNode &src )
+    {
+        type = src.type;
+        name = src.name;
+        value = src.value;
+        lineNum = src.lineNum;
+        left = src.left;
+        right = src.right;
+    }
+};
+
+class Identifier
+{
+private:
+    ExprNode node;
+
+public:
+    enum Type
+    {
+        Register,
+        Symbol,
+        Command,
+        CondBranch
+    };
+    enum Mode
+    {
+        AsmClassic,
+        AsmNew,
+        AsmBoth
+    };
+
+    std::string name;
+    Mode mode;
+    Type type;
+    int getValue() const
+    {
+        return node.getValue();
+    };
+    void setValue( int val ) { node.setValue( val ); };
+    bool isReady() const
+    {
+        return node.isReady();
+    }
+    bool resolve( Assembler &assembler )
+    {
+        return node.resolve( assembler );
+    }
+    void setExpr( const ExprNode &src )
+    {
+        type = Symbol;
+        node = src;
+    }
+
+    //Identifier() {};
+    Identifier( const std::string &_name, Type _type, int _value, Mode _mode ):
+        node( ExprNode::Literal, "", _value, 0 ), name( _name ), mode( _mode ), type( _type ) {};
+    Identifier( const Identifier &src ):
+        node( src.node ), name( src.name ), mode( src.mode ), type( src.type ) {};
+};
+
+struct ForwardReference
+{
+public:
+    int type;
+    mWord addr;
+    ExprNode node;
+
+public:
+    enum Type
+    {
+        Address,
+        CondAdd,
+        InplaceImm
+    };
+
+    int getLine() const { return node.getLine(); };
+    ForwardReference( const std::string _name, mWord _addr, int _lineNum, int _type = Address ):
+        type( _type ), addr( _addr ), node( ExprNode::Symbol, _name, 0, _lineNum ) {};
+    ForwardReference( const ExprNode &_node, mWord _addr, int _type = Address ):
+        type( _type ), addr( _addr ), node( _node ) {};
+};
+
 class Assembler
 {
 private:
+    friend class ExprNode;
+
 	struct SourceFile
 	{
 		std::string name;
@@ -107,164 +268,6 @@ private:
 
     std::shared_ptr< FileProvider > provider;
 
-	class Identifier;
-
-	class ExprNode
-	{
-	private:
-		int type;
-		std::string name;
-		int value;
-		int lineNum;
-		std::shared_ptr< ExprNode > left, right;
-
-	public:
-		enum Type
-		{
-			Literal,
-			Symbol,
-			Operator
-		};
-
-		void setup( int _lineNum )
-		{
-			type = Literal;
-			value = 0;
-			name.clear();
-			lineNum = _lineNum;
-			left.reset();
-			right.reset();
-		}
-		int getLine() { return lineNum; };
-		std::string getName() { return name; };
-        std::string getUnresolvedName();
-		bool isReady() { return type == Literal; };
-		bool resolve( Assembler &assembler );
-		void setValue( int val )
-		{
-			type = Literal;
-			value = val;
-		}
-		int getValue()
-		{
-			if ( type != Literal )
-				throw ParseError( lineNum, "cannot resolve expression '" + name + "'!" );
-			return value;
-		};
-		std::string getDesc() const
-		{
-			std::string res;
-			if ( type == Literal )
-			{
-				res = std::to_string( value );
-			}
-			else if ( type == Symbol )
-			{
-				res = name;
-			}
-			else if ( type == Operator )
-			{
-				res = "( " + left->getDesc() + " " + name + " " + right->getDesc() + " )";
-			}
-			return res;
-		}
-		void setSymbol( const std::string &_name )
-		{
-			type = Symbol;
-			name = _name;
-		}
-		void setArgs( std::shared_ptr< ExprNode > _left, std::shared_ptr< ExprNode > _right )
-		{
-			left = _left;
-			right = _right;
-		}
-
-		ExprNode(): type( Literal ), value( 0 ), lineNum( 0 ) {};
-		ExprNode( int _lineNum ): type( Literal ), value( 0 ), lineNum( _lineNum ) {};
-		ExprNode( Type _type, std::string _name, int _value, int _lineNum ): type( _type ), name( _name ), value( _value ), lineNum( _lineNum ) {};
-		ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
-		void operator=( const ExprNode &src )
-		{
-			type = src.type;
-			name = src.name;
-			value = src.value;
-			lineNum = src.lineNum;
-			left = src.left;
-			right = src.right;
-		}
-	};
-
-	class Identifier
-	{
-	private:
-		ExprNode node;
-
-	public:
-		enum Type
-		{
-			Register,
-			Symbol,
-			Command,
-			CondBranch
-		};
-		enum Mode
-		{
-			AsmClassic,
-			AsmNew,
-			AsmBoth
-		};
-		
-		std::string name;
-		Mode mode;
-		Type type;
-		int getValue() 
-		{ 
-			return node.getValue();
-		};
-		void setValue( int val ) { node.setValue( val ); };
-		bool isReady()
-		{
-			return node.isReady();
-		}
-		bool resolve( Assembler &assembler )
-		{
-			return node.resolve( assembler );
-		}
-		void setExpr( const ExprNode &src )
-		{
-			type = Symbol;
-			node = src;
-		}
-
-		//Identifier() {};
-        Identifier( const std::string &_name, Type _type, int _value, Mode _mode ):
-            node( ExprNode::Literal, "", _value, 0 ), name( _name ), mode( _mode ), type( _type ) {};
-        Identifier( const Identifier &src ):
-            node( src.node ), name( src.name ), mode( src.mode ), type( src.type ) {};
-	};
-
-	struct ForwardReference
-	{
-	public:
-		int type;
-		mWord addr;
-		ExprNode node;
-
-	public:
-		enum Type
-		{
-			Address,
-			CondAdd,
-			InplaceImm
-		};
-
-		int getLine() { return node.getLine(); };
-        ForwardReference( const std::string _name, mWord _addr, int _lineNum, int _type = Address ):
-            type( _type ), addr( _addr ), node( ExprNode::Symbol, _name, 0, _lineNum ) {};
-        ForwardReference( const ExprNode &_node, mWord _addr, int _type = Address ):
-            type( _type ), addr( _addr ), node( _node ) {};
-	};
-
     MMU         &mmu;
 	mWord		org = 0;
 	std::string	errorMessage;
@@ -282,7 +285,7 @@ private:
 
 	void processArgument( const std::string &kind, const int reg, const ExprNode *expr );
 
-	Identifier *findIdentifier( const std::string &name, bool newSyntex );
+    Identifier *findIdentifier( const std::string &name, bool newSyntex );
 
     std::string extractNextLexem( const std::string &parseString, size_t &parsePos );
 	void extractLexems( const std::string &parseString, std::vector< std::string > &data, bool &hasLabel );
@@ -292,51 +295,57 @@ private:
 	std::string peekNextLexem();
 	void putBackLexem();
 
+    void parseStart();
+    void parseEnd();
+    ExprNode parseBrackets( bool allowEndOfLine );
+    ExprNode parseExpr( int addrForForward, bool tryToResolve );
+
+    void setOrg( mWord newOrg )
+    {
+        org = newOrg;
+    };
+    void op( mTag _cmd, mTag _r, mTag _y, mTag _x, int addr = -1 )
+    {
+        if ( addr == -1 )
+            addr = org++;
+        mmu.write( addr, Instruction::encode( _cmd, _r, _y, _x ) );
+    };
+    void data( mWord _data, int addr = -1 )
+    {
+        if ( addr == -1 )
+            addr = org++;
+        mmu.write( addr, _data );
+    };
+    bool getNewSyntax() { return newSyntax; };
+
+    void resolveForwards();
+    void resolve( ExprNode &node )
+    {
+        node.resolve( *this );
+        if ( !node.isReady() )
+        {
+            resolveForwards();
+            node.resolve( *this );
+        }
+    }
+
+    void preProcessFile( const std::string &fileName );
+
 public:
 	Assembler() = delete;
 	Assembler( const Assembler &src ) = delete;
     Assembler( MMU &_mmu ): mmu( _mmu ) {};
 
-	void setOrg( mWord newOrg )
-	{
-		org = newOrg;
-	};
-	void op( mTag _cmd, mTag _r, mTag _y, mTag _x, int addr = -1 )
-	{	
-		if ( addr == -1 )
-			addr = org++;
-        mmu.write( addr, Instruction::encode( _cmd, _r, _y, _x ) );
-	};
-	void data( mWord _data, int addr = -1 )
-	{
-		if ( addr == -1 )
-			addr = org++;
-        mmu.write( addr, _data );
-	};
-	bool getNewSyntax() { return newSyntax; };
-
-	void resolveForwards();
-	void resolve( ExprNode &node )
-	{	
-		node.resolve( *this );
-		if ( !node.isReady() )
-		{
-			resolveForwards();
-            node.resolve( *this );
-		}
-	}
 	void reset();
-	void parseStart();
-	void parseEnd();
-	ExprNode parseBrackets( bool allowEndOfLine );
-	ExprNode parseExpr( int addrForForward, bool tryToResolve );
-
-	void preProcessFile( const std::string &fileName );
 
     bool parseFile( const std::string &fileName );
     const std::string &getErrorMessage() { return errorMessage; };
     void setSourceFileProvider( const std::shared_ptr< FileProvider > _provider ) { provider = _provider; };
 
+    std::vector< Identifier > &getIdentifiers()
+    {
+        return identifiers;
+    }
 };
 
 }	// namespace Simpleton

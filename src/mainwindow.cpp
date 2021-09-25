@@ -77,6 +77,8 @@ MainWindow::MainWindow(QWidget *parent)
     INIT_PREDEF_FILE( "test02.asm" );
     INIT_PREDEF_FILE( "test03.asm" );
     INIT_PREDEF_FILE( "test04.asm" );
+    INIT_PREDEF_FILE( "test05.asm" );
+    INIT_PREDEF_FILE( "test06.asm" );
     INIT_PREDEF_FILE( "simpx.inc" );
     INIT_PREDEF_FILE( "simple_lib.inc" );
     INIT_PREDEF_FILE( "zstr.inc" );
@@ -318,9 +320,25 @@ void MainWindow::on_actionRun_triggered()
     }
     else
     {
+        // dump labels to debug window
+        std::vector< Simpleton::Identifier > &idens = asm4.getIdentifiers();
+        std::sort( idens.begin(), idens.end(),
+                   []( const Simpleton::Identifier &a, const Simpleton::Identifier &b )
+                    { return a.getValue() < b.getValue(); } );
+
+        ui->debuggerEditor->clear();
+        ui->debuggerEditor->moveCursor( QTextCursor::End );
+        ui->debuggerEditor->insertPlainText( " === Identifiers ===\n" );
+        for ( auto &it: idens )
+        {
+            if ( it.type != Simpleton::Identifier::Symbol )
+                continue;
+            ui->debuggerEditor->insertPlainText(
+                QString( "%1 %2\n" ).arg( it.getValue(), 4, 16, QLatin1Char( '0' ) ).arg( QString::fromLocal8Bit( it.name.c_str() ) ) );
+        }
+
         run = true;
         ui->msgEdit->setPlainText( "Ok." );
-        ui->debuggerEditor->clear();
         ui->tabWidget->setCurrentWidget( ui->videoTab );
     }
 }

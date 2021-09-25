@@ -106,12 +106,12 @@ void Assembler::parseEnd()
 	};
 }
 
-Assembler::Identifier *Assembler::findIdentifier( const std::string &name, bool newSyntax )
+Identifier *Assembler::findIdentifier( const std::string &name, bool newSyntax )
 {
 	Identifier *res = nullptr;
     for ( size_t i = 0; i < identifiers.size(); i++ )
 	{
-		Identifier &ident = identifiers[ i ];
+        Identifier &ident = identifiers[ i ];
         if ( !newSyntax && (ident.mode == Identifier::AsmNew) )
 			continue;
 		if ( newSyntax && (ident.mode == Identifier::AsmClassic) )
@@ -125,7 +125,7 @@ Assembler::Identifier *Assembler::findIdentifier( const std::string &name, bool 
 	return res;
 };
 
-std::string Assembler::ExprNode::getUnresolvedName()
+std::string ExprNode::getUnresolvedName() const
 {
     if ( left && !left->isReady() )
         return left->getUnresolvedName();
@@ -134,7 +134,7 @@ std::string Assembler::ExprNode::getUnresolvedName()
     return getName();
 }
 
-bool Assembler::ExprNode::resolve( Assembler &assembler )
+bool ExprNode::resolve( Assembler &assembler )
 {
 	if ( type == ExprNode::Literal )
 	{
@@ -422,7 +422,7 @@ static mTag operatorPriority( const std::string &op )
 	return 0;
 }
 
-Assembler::ExprNode Assembler::parseBrackets( bool allowEndOfLine )
+ExprNode Assembler::parseBrackets( bool allowEndOfLine )
 {
 	std::vector< ExprNode > nodes;
 	nodes.push_back( parseExpr( -1, false ) );
@@ -472,7 +472,7 @@ Assembler::ExprNode Assembler::parseBrackets( bool allowEndOfLine )
 	return nodes[ 0 ];
 }
 
-Assembler::ExprNode Assembler::parseExpr( int addrForForward, bool tryToResolve )
+ExprNode Assembler::parseExpr( int addrForForward, bool tryToResolve )
 {
 	ExprNode res( lineNum );
 	std::string expr = getNextLexem();
