@@ -251,7 +251,13 @@ public:
     const mWord    *getPalPtr16() { return pal16; };
     const uint32_t *getPalPtr32() { return pal32; };
 
-    SimpXMMU( int _pagesCount ): pagesCount( _pagesCount ), mem( pageSize * _pagesCount, 0 ) {};
+    explicit SimpXMMU( int _pagesCount ): pagesCount( _pagesCount ), mem( pageSize * _pagesCount, 0 )
+    {
+        memset( pal16, 0, sizeof( pal16 ) );
+        memset( pal32, 0, sizeof( pal32 ) );
+        memset( ports, 0, sizeof( ports ) );
+        memset( inputs, 0, sizeof( inputs ) );
+    };
     ~SimpXMMU() {};
     void reset() override;
     mWord read(mWord addr) override;
@@ -266,9 +272,9 @@ class SimpX
 {
     SimpXMMU mmu;
     CPU cpu;
-    uint64_t clocks;
+    uint64_t clocks = 0;
 public:
-    SimpX( int _pages ): mmu( _pages ), cpu( mmu ) {}
+    explicit SimpX( int _pages ): mmu( _pages ), cpu( mmu ) {}
     SimpXMMU &getMMU() { return mmu; }
     CPU &getCPU() { return cpu; }
     uint64_t getClocks() { return clocks; }

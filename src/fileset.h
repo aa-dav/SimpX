@@ -10,7 +10,7 @@ class FileSetFile: public Simpleton::File
     int line = 0;
     QStringList strs;
 public:
-    FileSetFile( const QStringList &list ): strs( list ) {};
+    explicit FileSetFile( const QStringList &list ): strs( list ) {};
 
     // File interface
 public:
@@ -23,7 +23,7 @@ class FileSetProvider: public Simpleton::FileProvider
     QListWidget *list = nullptr;
 
 public:
-    FileSetProvider( QListWidget *_list ): list( _list ) {};
+    explicit FileSetProvider( QListWidget *_list ): list( _list ) {};
 
     // FileProvider interface
 public:

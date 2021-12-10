@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <cstring>
 
 namespace Simpleton
 {
@@ -123,10 +124,13 @@ class MMU64: public MMU
 private:
     mWord mem[ 65536 ];
 public:
+    MMU64()
+    {
+        std::memset( mem, 0, sizeof( mem ) );
+    }
     void reset() override
     {
-        for ( int i = 0; i < 65536; i++ )
-            mem[ i ] = 0;
+        std::memset( mem, 0, sizeof( mem ) );
     }
     mWord read( mWord addr ) override
     {
@@ -147,10 +151,10 @@ class CPU
 private:
     MMU         &mmu;
 	mWord		reg[ 8 ];
-	Instruction	instr;
-	mWord		x, y, a;
-	uint32_t	tmp;
-	uint64_t	clocks;
+    Instruction	instr{};
+    mWord		x = 0, y = 0, a = 0;
+    uint32_t	tmp = 0;
+    uint64_t	clocks = 0;
 
     mWord getMem( mWord addr )
     {
@@ -169,7 +173,7 @@ private:
     void mathOverflow( bool sub );
 
 public:
-    CPU( MMU &_mmu ): mmu( _mmu )
+    explicit CPU( MMU &_mmu ): mmu( _mmu )
 	{
 		reset();
 	}

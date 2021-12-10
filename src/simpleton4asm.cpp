@@ -341,7 +341,7 @@ std::string Assembler::peekNextLexem()
 
 void Assembler::putBackLexem()
 {
-    if ( curLexem <= 0 )
+    if ( curLexem == 0 )
         throw ParseError( lineNum, "invalid putBackLexem()!" );
     curLexem--;
 };
@@ -951,7 +951,6 @@ bool Assembler::parseFile( const std::string &fileName )
 		*/
 		// Assemble source code:
 		parseStart();
-		std::string line;
         for ( size_t i = 0; i < lines.size(); i++ )
 		{
 			lineNum++;

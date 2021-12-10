@@ -30,7 +30,7 @@ class FileStd: public File
 {
     std::ifstream ifs;
 public:
-    FileStd( const std::string &fname ): ifs( fname, std::ios::in | std::ios::binary ) {};
+    explicit FileStd( const std::string &fname ): ifs( fname, std::ios::in | std::ios::binary ) {};
 
     std::string get_line() override
     {
@@ -156,9 +156,9 @@ public:
     }
 
     ExprNode(): type( Literal ), value( 0 ), lineNum( 0 ) {};
-    ExprNode( int _lineNum ): type( Literal ), value( 0 ), lineNum( _lineNum ) {};
-    ExprNode( Type _type, std::string _name, int _value, int _lineNum ): type( _type ), name( _name ), value( _value ), lineNum( _lineNum ) {};
-    ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
+    explicit ExprNode( int _lineNum ): type( Literal ), value( 0 ), lineNum( _lineNum ) {};
+    ExprNode( Type _type, const std::string &_name, int _value, int _lineNum ): type( _type ), name( _name ), value( _value ), lineNum( _lineNum ) {};
+    explicit ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
     void operator=( const ExprNode &src )
     {
         type = src.type;
@@ -235,7 +235,7 @@ public:
     };
 
     int getLine() const { return node.getLine(); };
-    ForwardReference( const std::string _name, mWord _addr, int _lineNum, int _type = Address ):
+    ForwardReference( const std::string &_name, mWord _addr, int _lineNum, int _type = Address ):
         type( _type ), addr( _addr ), node( ExprNode::Symbol, _name, 0, _lineNum ) {};
     ForwardReference( const ExprNode &_node, mWord _addr, int _type = Address ):
         type( _type ), addr( _addr ), node( _node ) {};
@@ -249,7 +249,7 @@ private:
 	struct SourceFile
 	{
 		std::string name;
-		SourceFile( const std::string &src ): name( src ) {};
+        explicit SourceFile( const std::string &src ): name( src ) {};
 	};
 	struct SourceLine
 	{
@@ -271,17 +271,17 @@ private:
     MMU         &mmu;
 	mWord		org = 0;
 	std::string	errorMessage;
-	int		lineNum;
+    int		lineNum = 0;
 	std::string	lastLabel;
 	std::string	curLabel;
-    size_t		curLexem;
+    size_t		curLexem = 0;
 	std::vector< Identifier >	identifiers;
 	std::vector< ForwardReference >	forwards;
 	bool newSyntaxMode = false;
 	// Current state of line parsing
-	bool newSyntax, indirect;
+    bool newSyntax = false, indirect = false;
 	ExprNode nodeR, nodeY, nodeX;
-	int r, x, y, cmd, cond, stage;
+    int r = 0, x = 0, y = 0, cmd = 0, cond = 0, stage = 0;
 
 	void processArgument( const std::string &kind, const int reg, const ExprNode *expr );
 
@@ -333,8 +333,8 @@ private:
 
 public:
 	Assembler() = delete;
-	Assembler( const Assembler &src ) = delete;
-    Assembler( MMU &_mmu ): mmu( _mmu ) {};
+    explicit Assembler( const Assembler &src ) = delete;
+    explicit Assembler( MMU &_mmu ): mmu( _mmu ) {};
 
 	void reset();
 
