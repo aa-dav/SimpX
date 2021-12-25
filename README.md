@@ -1,8 +1,11 @@
 # SimpX
 
 SimpX is (virtual) 16-bit PC based on (virtual) Simpleton 4 CPU: 
+
 [Simpleton 4 short description (english)](README_simpleton_en.md)
+
 [Simpleton 4 short description (russian)](README_simpleton_ru.md)
+
 
 Online emulator+assembler: http://alxhost.tk/SimpX/SimpX.html
 (select 'test0.asm' in list and click menu 'Compile and run')
