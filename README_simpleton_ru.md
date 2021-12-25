@@ -1,63 +1,64 @@
 # Simpleton 4
 
-Some of 8bit-guy videos including covering of project 'Gigatron TTL' inspired me to make some ISAs.
-This is fourth generation of the same idea (see below).
+Некоторые видео ютубера 8bit-guy включая про 'Gigatron TTL' вдохновили меня придумать некоторую простую процессорную архитектуру (ISA).
+Это четвёртое её поколение пытающееся использовать одну и ту же идею.
 
-First of all: this ISA is definitely suboptimal.
+Во первых, эта ISA субоптимальна.
 
-**The only goal is to make instruction format as simple as possible keeping programming simple, flexible and non-esoteric.**
+**Главная цель - это сделать формат инструкции как можно более простым сохраняя программирование тоже простым, но гибким и не эзотерическим.**
 
-I know that code density could be improved, leading to something like MSP 430 as a result. But it's not an option. :)
+Я знаю, что плотность когда можно улучшить и получиться что то наподобие MSP 430, но это не вариант. :)
 
-Second: memory and registers are 16-bit wide for simplicity.
-There are eight registers r0-r7 and 128Kb or 64Kw of 16-bit memory cells.
+Во вторых, для простоты и регистры и ячейки памяти 16-битны.
+Имеется восемь регистров r0-r7 и 128Кб или 65536 ячеек 16-битной памяти.
 
-So, instruction opcode is 16-bit wide too. There is the only one instruction format:
+Поэтому опкод инструкции тоже 16-битен. И есть только один формат инструкции:
 ![Instruction format picture](https://cdn.jpg.wtf/futurico/95/66/1613283583-9566e916e4b56fca243a37105c20898d.png)
 
-Every instruction do the only one thing: takes two operands X and Y, writes them into ALU with operation code (INSTR) and writes result from ALU to the destination R. Even calls or conditional jumps do nothing but this.
-Fields X, Y and R are register's numbers 0-7. Plus bits of indirection (XI, YI, RI) which (if set) tell to work with memory cell registers points to. 4:4:4:4 bit format makes it easier to read machine codes as a result too.
-So, every instruction do expression: R = Y op X, where op is operation code. Square brackets around operand mean indirect mode (indirection bit = 1).
+Каждая инструкция делает только одну вещь: берёт два операнда X и Y, записывает их в АЛУ (арифметико-логическое устройство) с кодом инструкции и получив результат записывает его в R. Даже вызовы процедур или условные переходы делают только это.
+Поля X, Y и R в инструкции это просто номера регистров 0-7. Плюс биты косвенности (XI, YI, RI) которые если установлены, то значит мы работаем с ячейкой памяти с адресом из соответствующего регистра. Замечу, что формат 4:4:4:4 позволяет легко считывать смысл инструкции прямо по её 16-ричному коду.
+Таким образом любая инструкция выполняет выражение: R = Y op X, где 'op' это код операции. Квадратные скобки вокруг любого из операндов означают режим косвенности (бит косвенности = 1).
 
-Registers **r5-r7** have synonyms and special features:
-- **r5 = sp** - stack pointer - post-increments after indirect reading and pre-decrements before indirect writing.
-- **r6 = pc** - program counter - always post-increments after indirect reading. Indirect writing to pc is meaningless and cancels write from ALU to R. That is ALU performs operation, updates flags, but result is not going anywhere. In this case we can use synonym 'void'.
-- **r7 = psw** = processor status word (flags, including enable/disable interrupts). Indirect reading/writing is meaningless, so it works as 'immediate indirect' address mode (data from [ pc++ ] serves as address of memory cell we work with).
 
-Immediate data in X or Y is available as indirect pc reading because after reading instruction code pc post-increments (as always) and points to next word and will be advanced to the next word after indirect reading.
-During machine cycles immediates for operands and result are read from [ pc++ ] (if needed) in next order: X, Y, R. This is why it's simplier to express instruction as R = Y + X.
-Instructions with first four opcodes treat field XI+X of instruction code as 4-bit 'inplace immediate' -8..+7 or 0..15. These instructions have letter 'i' (inplace immediate) in their symbolic names.
+Регистры **r5-r7** имеют псевдонимы и особый функционал:
+- **r5 = sp** - указатель стека - пост-инкрементируется после косвенного чтения и пре-декрементируется после косвенной записи.
+- **r6 = pc** - счётчик инструкций - всегда пост-инкрементируется после косвенного чтения. Именно из него процессор считывает поток команд. Косвенная запись в pc не имеет смысла и процессор отменяет такую запись. Т.е. АЛУ исполняет операцию, обновляет регистр флагов, но результат никуда не записывается. В таком случае можно использовать еще псевдоним 'void'.
+- **r7 = psw** = processor status word (регистр флагов). Косвенные чтения/запись в него бесмысленны, но такую комбинацию выбрать можно и она работает как режим адресации 'непосредственный адрес' ('immediate indirect') (данное из [ pc++ ] служит как адрес ячейки памяти откуда берется аргумент или куда записывается результат).
 
-So, we could have next instructions in assembler syntax:
+Технически непосредственные данные (числовые константы) в X или Y реализуются как косвенное чтение из pc, т.к. после такого чтения он автоматически увеличится (как всегда это делает) и будет указывать на следующее слово/инструкцию в памяти.
+Во время исполнения инструкции операнды и результат считываются из [ pc++ ] (если надо) в следующем порядке: X, Y, R. Вот почему проще говорить о форме инструкции как R = Y + X.
+Первые четыре опкода (0-3) инструкций трактуют поле XI+X как четырёхбитное 'inplace immediate' - константа встроенная в инструкцию -8..+7 или 0..15. В ассемблерной мнемонике такие инструкции имеют суффикс (возможно один из) 'i'.
+
+Итак, давайте уже рассмотрим несколько инструкций в классическом ассемблерном синтаксисе:
 ```
-add r0 r1 r2		; regular add of registers: r0 = r1 + r2
-adc r1 r1 r3		; add with carry: r1 = r1 +c r3
-add [ r2 ] 100 r4		; add r4 with immediate ( addressing mode [ pc ] ) 100 and write it to memory r2 points to: [ r2 ] = 100 + r4
-add [ r3 ] r4 [ $200 ]		; get data from [ $200 ] (hex address/number), add with r4, and write to r3: [ r3 ] = r4 + [ $200 ]
-add [ 100 ] [ 20 ] [ 30 ]	; register-free 4-word-long instruction: [ 100 ] = [ 20 ] + [ 30 ]
+add r0 r1 r2		; сложение регистров: r0 = r1 + r2
+adc r1 r1 r3		; сложение с учётом флага переноса: r1 = r1 +c r3
+add [ r2 ] 100 r4		; сложить r4 с константой ( режим адресации [ pc ] ) 100 и записать в ячейку памяти с адресом r2: [ r2 ] = 100 + r4
+add [ r3 ] r4 [ $200 ]		; взять из ячейки памяти с адресом $200 (16-ричный адрес/число) число, сложить с r4 и записать в [ r3 ]: [ r3 ] = r4 + [ $200 ]
+add [ 100 ] [ 20 ] [ 30 ]	; вообще без регистров работает с ячейками памяти с указанными адресами: [ 100 ] = [ 20 ] + [ 30 ]
 ```
-There is no commas in this syntax, so complex compile-time expressions must be placed in round brackets:
+Заметьте, что в синтаксисе этого ассемблера нет запятых между аргументами, поэтому если аргумент является сложным выражением времени компиляции, то его надо заключать в круглые скобки:
 ```
-add r0 r0 (label + 4 * offset)	; compile-time expression in brackets
+add r0 r0 (label + 4 * offset)	; в скобках может быть сложное выражение вычислимое на этапе компиляции
 ```
 
-There are 16 possible ALU operations. Next opcodes are in use right now:
-- 00 **ADDIS** - add Y with INPLACE immediate in XI+X (-8..+7) silent (doesn't update flags)
-- 01 **ADDI** - add Y with INPLACE immediate in XI+X (-8..+7)
-- 02 **RRCI** - rotate Y right (cyclic) by INPLACE immediate bits (0..15), carry gets last rotated bit
+Как понятно всего возможно 16 кодов операций максимум. Сейчас реализованы следующие:
+- 00 **ADDIS** - сложить Y с inplace immediate в X (-8..+7) без обновления флагов (S - silent, т.е. без обновления флагов)
+- 01 **ADDI** - сложить Y с inplace immediate в X (-8..+7)
+- 02 **RRCI** - прокрутка Y вправо (в русской литературе обычно переводят как 'циклический сдвиг') на INPLACE immediate (0..15) бит, во флаг переноса заносится последний перенесённый бит
 
-- 04 **ADDS** - add silent (doesn't update flags)
-- 05 **ADD** - add
-- 06 **ADC** - add with carry
-- 07 **SUB** - sub
-- 08 **SBC** - sub with carry
+- 04 **ADDS** - сложение без обновления флагов (silent)
+- 05 **ADD** - сложение
+- 06 **ADC** - сложение с учётом флага переноса
+- 07 **SUB** - вычитение
+- 08 **SBC** - вычитание с учётом флага переноса
 - 09 **AND** - and
 - 0A **OR** - or
 - 0B **XOR** - xor
-- 0C **CADD** - conditional add. never updates flags. (see below!)
-- 0D **RRC** - rotate Y right (cyclic) by X bit, carry gets last rotated bit
+- 0C **CADD** - условное сложение. не обновляет флаги. см. ниже.
+- 0D **RRC** - прокрутка Y вправо на X бит, во флаг переноса заносится последний перенесённый бит
 
-## NOTES:
+## ПОЯСНЕНИЯ:
 
 1. There is no separate opcode for 'move' because it's 'addis' with 0 in field X of opcode.
 But for simplicity assembler hase 'move' instruction which is shortcut for 'addis R Y 0'.
