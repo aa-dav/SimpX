@@ -12,7 +12,7 @@ I know that code density could be improved, leading to something like MSP 430 as
 Second: memory and registers are 16-bit wide for simplicity.
 There are eight registers r0-r7 and 128Kb or 64Kw of 16-bit memory cells.
 
-So, instruction opcode is 16-bit wide too. There is the only one instruction format:
+So, instruction opcode is 16-bit wide too. There is the only one instruction format:  
 ![Instruction format picture](https://cdn.jpg.wtf/futurico/95/66/1613283583-9566e916e4b56fca243a37105c20898d.png)
 
 Every instruction do the only one thing: takes two operands X and Y, writes them into ALU with operation code (INSTR) and writes result from ALU to the destination R. Even calls or conditional jumps do nothing but this.
