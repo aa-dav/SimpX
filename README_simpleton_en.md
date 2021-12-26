@@ -92,10 +92,11 @@ ge - signed 'greater or equal'
 l  - signed 'less'
 g  - signed 'greater'
 le - signed 'less or equal'
+Last six conditions, like in classics, answer question 'Y in comparison to X' after substraction was made.
 ```
 4. CALL may be implemented as:
 ```
-addis sp pc 2 		; precalculate return address
+addis [ sp ] pc 2 		; precalculate return address
 move pc proc_address
 ```
 There is shortcut for this in asssembler in usual form:
@@ -136,11 +137,6 @@ or bit tests (of any kind):
 ```
 and void r0 $0001
 jz ...
-```
-...or comparison of number with constant in range -8..+7 via one-word instruction (inplace immediate:
-```
-addi void r0 -3
-jz ... ; r0 is equal to 3
 ```
 ...or checking of i-th bit of operand via placing it in carry flag during RRCI instruction execution:
 ```

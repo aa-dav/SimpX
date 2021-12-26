@@ -60,124 +60,114 @@ add r0 r0 (label + 4 * offset)	; в скобках может быть слож�
 
 ## ПОЯСНЕНИЯ:
 
-1. There is no separate opcode for 'move' because it's 'addis' with 0 in field X of opcode.
-But for simplicity assembler hase 'move' instruction which is shortcut for 'addis R Y 0'.
-Inplace immediate in X could be omitted in assembler syntax:
+1. Для обычной для других процессоров инструкции 'move' здесь нет опкода, т.к. это 'addis' с X=0.
+Однако, для простоты ассемблер поддерживает псевдоинструкцию 'move A B' которая превращается в 'addis A B 0'.
+Вообще в инструкции addis X может быть опущен и станет равен 0.
 ```
-addis r0 r1 1 ; adding 1 to r1 and placing result to r0
-addis r0 r1 0 ; adding 0 to r1 and placing result (that is r1) to r0
-move [ r2 ] r1 		; Move from r1 to memory cell r2 points to (shortcut for addis [ r2 ] r1 0)
-move [ r3 ] [ 100 ]	; Move from memory cell with address 100 to r3
+addis r0 r1 1 ; прибавляем 1 к r1 и записываем результат в r0
+addis r0 r1 0 ; прибавляем 0 к r1 и записываем результат (т.е. просто r1) в r0
+move [ r2 ] r1 		; Копируем r1 в ячейку памяти куда указывает r2 (превратится в addis [ r2 ] r1 0)
+move [ r3 ] [ 100 ]	; Копируем из ячейки памяти с адресом 100 в r3
 ```
-2. writing immediate in pc is jump and adding (silent) pc with immediate is relative jump:
+2. Запись в pc есть ничто иное как переход, причём через операцию сложения легко реализуюется переход относительный:
 ```
-move pc address		; jump
-adds pc pc offset	; relative jump
+move pc address		; переход на address
+adds pc pc offset	; относительный переход на смещение
 ```
-3. conditional add is the key to the conditional branching, it works in this way: X argument (16 bit) is decoupled in two parts: upper 4 bits are conditional code and lower 12 bits are sign-extended to 16 bit of -2048..+2047 addendum. That is condition code is not part of opcode, but part of data! If condition is false - ALU skips addition and returns Y without changes.
-So, to implement conditional branching we just do:
+3. Условное сложение - ключ к условным переходам. Оно работает так: аргумент X (16-битный) раскладывается на две части: старшие 4 бита кодируют условие, а нижние 12 бит расширяются со знаком в слагаемое -2048..+2047 (смещение). Т.е. код условия не является частью опкода, а является частью данных! Если условие срабатывает, то АЛУ складывает смещение с Y и записывает результат в R. Иначе в R попадает Y в неизменном виде.
+Таким образом, чтобы реализовать условный переход нам надо сделать:
 ```
-cadd pc pc condition_with_offset
+cadd pc pc условие_и_смещение
 ```
-Assembler provides automatic offset calculation for labels of course.
-For simplicity alternate syntax is supported (jz, jnz, jc, jnc and so on):
+Для простоты и привычности ассемблер предоставляет псевдонимы для последнего в виде привычных условных переходов вида 'j** адрес', где ** - это мнемонический код условия.
+Например:
 ```
-jnz label
+jnz label	; перейти на label если не зажжён флаг нуля (метка должна быть в пределах 2Kw от текущего pc!)
 ```
-Possible conditional codes and their mnemonics:
+Возможные коды условий:
 ```
-z, nz, c, nc, s, ns, o, no - test of corresponding flag (n* for 'NOT set')
-a  - unsigned 'above'
-be - unsigned 'below or equal'
-ge - signed 'greater or equal'
-l  - signed 'less'
-g  - signed 'greater'
-le - signed 'less or equal'
+z, nz, c, nc, s, ns, o, no - тестирует соответствующий флаг (n* для 'НЕ')
+a  - беззнаковое 'above' (больше)
+be - беззнаковое 'below or equal' (ниже или равно)
+ge - знаковое 'greater or equal' (больше или равно)
+l  - знаковое 'less' (меньше)
+g  - знаковое 'greater' (больше)
+le - знаковое 'less or equal' (меньше или равно)
 ```
-4. CALL may be implemented as:
+Последние шесть условий по классике подразумевают, что только что была выполнена операция вычитания аргументов и вопрос стоит как 'Y по отношению к X?'.
+4. CALL (вызов процедур/подпрограмм) не может в Simpleton быть реализован в одну инструкцию и реализуется в две:
 ```
-addis sp pc 2 		; precalculate return address
-move pc proc_address
+addis [ sp ] pc 2 		; вычислим адрес возврата и поместим его в вершину стека
+move pc proc_address		; переходим на адрес процедуры
 ```
-There is shortcut for this in asssembler in usual form:
+Существует ассемблерная мнемоника реализующая эти две инструкции в одну строку:
 ```
 call proc_address
 ```
-So, it's two instructions and 3 words. This is the most visible penalty of unified instruction format.
-
-5. But RET is just:
+Получается, что call в Simpleton состоит из двух инструкций и занимает минимум три слова. По моему это наиболее значимое пенальти в этой минималистичной системе команд.
+5. Однако ret (возврат из процедуры) это одно слово инструкции извлечения из вершины стека pc:
 ```
-move pc [ sp ] ; one-word addis instruction
+move pc [ sp ]		; есть псевдоинструкция 'ret'
 ```
-6. ADDI could be used as move with updating flags (testing move, useful in loops like STRCPY).
+6. addi где X=0 можно записать псевдоинструкцией movet (тестирующий move):
 ```
-StrCpy: 		; R1 - pointer to src, R2 - pointer to dst
-  movet [ r2 ] [ r1 ] 	; movet is shortcut for addi x y 0 ; 'move with Test'
+StrCpy: 		; R1 - указатель на src, R2 - указатель на dst
+  movet [ r2 ] [ r1 ] 	; movet то же самое что addi x y 0
   jz Exit
-  addis r1 r1 1		; increment r1
-  addis r2 r2 1		; increment r2
+  addis r1 r1 1		; увеличиваем r1
+  addis r2 r2 1		; увеличиваем r2
   move pc StrCpy
 Exit:
-  ret 			; shortcut for move pc [ sp ]
+  ret 			; псевдоним для move pc [ sp ]
 ```
-7. Disabling/enabling interrupts is just simple as:
+7. Включение/выключение прерываний не требует специальных инструкций как во многих других процессорах, а делается через логические инструкции:
 ```
-and psw psw flag_mask ; enable
-or psw psw inv_flag_mask ; disable (inverse of flag bit)
+and psw psw flag_mask ; включить
+or psw psw inv_flag_mask ; отключить
 ```
-Note, that ALU updates flags first and then write from ALU to R happens. So then psw as destination do not take into account changes of flags from ALU.
-
-8.  Keyword 'void' in place of R means writing to [ PC ] - that is cancelation of writing result from ALU anywhere.
-This allows to make non-destructing comparisons:
+Тут важно заметить, что АЛУ сперва обновляет регистр флагов и только потом записывает результат в R. Таким образом если psw указан как R, то обновление флагов произошедшее во время операции просто затирается.
+8.  Ключевое слово 'void' на месте R означает запись в [ pc ] - то есть отмену записи. Обновление флагов, однако, происходит, что может быть использовано чтобы реализовать типичную для других процессоров инструкцию cmp (неразрушающее регистры сравнение):
 ```                                              
-sub void A B ; acts like 'cmp A B' in many other ISAs
+sub void A B ; действует как 'cmp A B' во многих других ISA
 jnz ...
 ```
-or bit tests (of any kind):
+...или тестирование бит любого рода:
 ```
 and void r0 $0001
 jz ...
 ```
-...or comparison of number with constant in range -8..+7 via one-word instruction (inplace immediate:
+...или проверка i-ого бита операнда помещением его во флаг переноса (инструкция rrci):
 ```
-addi void r0 -3
-jz ... ; r0 is equal to 3
-```
-...or checking of i-th bit of operand via placing it in carry flag during RRCI instruction execution:
-```
-rrci void r0 3 ; CF gets bit 3
-jc ... ; jump if CF=1
+rrci void r0 3 ; CF получит бит 3
+jc ... ; переход если CF=1
 ```
 
-### New assembler syntax
+### Новый синтаксис ассемблера
 
-Assembler instructions 'mode classic' and 'mode new' can switch assembler back and forth new 'math notation'.
-Most of instructions could be expressed as 'R = Y op X' where 'op' is operation sign.
-Next instructions fulfill this pattern (example for R=R0, Y=R1 and X=[ label ]):
+В ассемблере есть ключевое слово 'mode classic' и 'mode new' которые переключают его в классическую и "математическую" нотации.
+Большинство инструкций в "математической" нотации может быть написано как 'R = Y op X' где 'op' это "знак операции".
+Следующие инструкции попападают под это правило (пример для R=R0, Y=R1 и X=[ label ]):
 ```
-04 - ADDS : r0 = r1 +s [ label ] ; add silent (doesn't update flags)
-05 - ADD  : r0 = r1 +  [ label ] ; add
-06 - ADC  : r0 = r1 +c [ lavel ] ; add with carry
-07 - SUB  : r0 = r1 -  [ label ] ; sub
-08 - SBC  : r0 = r1 -c [ label ] ; sub with carry
+04 - ADDS : r0 = r1 +s [ label ] ; сложение без флагов
+05 - ADD  : r0 = r1 +  [ label ] ; сложение
+06 - ADC  : r0 = r1 +c [ lavel ] ; сложение с переносом
+07 - SUB  : r0 = r1 -  [ label ] ; вычитание
+08 - SBC  : r0 = r1 -c [ label ] ; вычитание с переносом
 09 - AND  : r0 = r1 &  [ label ] ; and
 0A - OR   : r0 = r1 |  [ label ] ; or
 0B - XOR  : r0 = r1 ^  [ label ] ; xor
-0C - CADD : r0 = r1 +? [ label ] ; conditional add. never updates flags.
-0D - RRC  : r0 = r1 >> [ label ] ; rotate Y right (cyclic) by X bits
+0C - CADD : r0 = r1 +? [ label ] ; условное сложение
+0D - RRC  : r0 = r1 >> [ label ] ; прокрутка Y направо (циклическая) на X бит
 ```
-But there are 3 opcodes (right now) which fall out of this pattern and have special syntax:
+Но три опкода с inplace immediate выпадают из этого правила и имеют особый синтаксис:
 ```
-00 - ADDIS : r0 <- r1 - 1         ; add Y with INPLACE immediate in XI+X SILENT (flags are not updated)
-01 - ADDI  : r0 <= r1 + 3         ; add Y with INPLACE immediate in XI+X
-02 - RRCI  : r0 <= r1 >> 15       ; rotate Y right (cyclic) by INPLACE immediate bits
+00 - ADDIS : r0 <- r1 - 1         ; сложение с inplace immediate без флагов
+01 - ADDI  : r0 <= r1 + 3         ; сложение с inplace immediate
+02 - RRCI  : r0 <= r1 >> 15       ; прокрутка направо (циклическая) на inplace immediate бит
 ```
-First of all - it's 'inplace immediate' commands: addi, addis and rcci. These of them who updates flags use '<=' as sign of this special case. 
-The only exceptions is 'addis' which uses '<-' to signal that it's not updates flags.
-If X and op are omitted with <- it assumes + 0 and makes no need in special move instruction: r0 <- r1 is equal to r0 <- r1 + 0
+Из эти инструкций те, что обновляют флаги используют '<=' вместо знака равенства.
+И исключение из исключений - это 'addis' которая использует вместо знака равенства '<-' чтобы обозначить, что инструкция не обновляет флаги.
+Если X в '<-' опущен, тогда он подразумевается равным нулю и запись 'r0 <- r1' есть более краткий вариант для 'move' и псевдоним для 'r0 <- r1 + 0'.
+Нужно отметить, что 'addis a b -1' (отрицательный аргумент) может быть выражен и как 'a <- b + -1', но так же и как 'a <- b - 1'. Ассемблер распознаёт такое - главное чтобы аргумент был в пределах -8..+7.
 
-Note, that 'addis a b -1' (negative inplace immediate) could be expressed in new syntax as 'a <- b + -1'. But also 'a <- b - 1' is correct (that is like 'sub' opcode). This is another reason for exclusion of addi(s) from regular '=' syntax.
-Also, 'move' is as simple as: 'a <- b' which is shortcut for 'a <- b + 0'.
-
-Note, that all pseudoops used for simplicity are still in place: 'jnz/call/ret' and so on.
-
+Все псевдоинструкции ассемблера предназначенные для облегчения программирования (call/ret/jnz и т.п.) продолжают работать без изменений и в новом синтаксисе.
