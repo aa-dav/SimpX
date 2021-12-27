@@ -158,7 +158,7 @@ public:
     ExprNode(): type( Literal ), value( 0 ), lineNum( 0 ) {};
     explicit ExprNode( int _lineNum ): type( Literal ), value( 0 ), lineNum( _lineNum ) {};
     ExprNode( Type _type, const std::string &_name, int _value, int _lineNum ): type( _type ), name( _name ), value( _value ), lineNum( _lineNum ) {};
-    explicit ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
+    ExprNode( const ExprNode &src ): type( src.type ), name( src.name ), value( src.value ), lineNum( src.lineNum ), left( src.left ), right( src.right ) {};
     void operator=( const ExprNode &src )
     {
         type = src.type;
