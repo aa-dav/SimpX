@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QDirIterator>
 #include "simp4completer.h"
 #include "simp4highlighter.h"
 #include "simpleton4disasm.h"
@@ -42,11 +43,6 @@ QString readResourceAsString( QString name )
     return strm.readAll();
 }
 
-#define INIT_PREDEF_FILE( name ) { \
-    QListWidgetItem *item = new QListWidgetItem( name ); \
-    item->setData( Qt::ItemDataRole::UserRole, readResourceAsString( ":/asm/" name ) ); \
-    ui->filesList->addItem( item ); };
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , simp( 64 )
@@ -73,17 +69,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     Q_INIT_RESOURCE( main );
 
-    INIT_PREDEF_FILE( "test01.asm" );
-    INIT_PREDEF_FILE( "test02.asm" );
-    INIT_PREDEF_FILE( "test03.asm" );
-    INIT_PREDEF_FILE( "test04.asm" );
-    INIT_PREDEF_FILE( "test05.asm" );
-    INIT_PREDEF_FILE( "test06.asm" );
-    INIT_PREDEF_FILE( "simpx.inc" );
-    INIT_PREDEF_FILE( "simple_lib.inc" );
-    INIT_PREDEF_FILE( "zstr.inc" );
-    INIT_PREDEF_FILE( "math.inc" );
-    INIT_PREDEF_FILE( "font-00.asm" );
+    // Load source files from resources
+    QDirIterator fileIt( ":/asm", QDir::Files );
+    while ( fileIt.hasNext() )
+    {
+        fileIt.next();
+        if ( fileIt.fileName().isEmpty() )
+            continue;
+        QListWidgetItem *item = new QListWidgetItem( fileIt.fileName() );
+        item->setData( Qt::ItemDataRole::UserRole,
+                       readResourceAsString( fileIt.filePath() ) );
+        ui->filesList->addItem( item );
+    }
+    ui->filesList->sortItems();
 
 #if SIMPX_FAKE_FS == 1
     asm4.setSourceFileProvider( std::make_shared<FileSetProvider>( ui->filesList ) );

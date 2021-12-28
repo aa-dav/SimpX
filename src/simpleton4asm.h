@@ -329,7 +329,7 @@ private:
         }
     }
 
-    void preProcessFile( const std::string &fileName );
+    void preProcessFile( const std::string &fileName, int parentFileNum, int parentLineNum );
 
 public:
 	Assembler() = delete;

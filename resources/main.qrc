@@ -4,12 +4,13 @@
         <file>asm/font-00.asm</file>
         <file>asm/simple_lib.inc</file>
         <file>asm/zstr.inc</file>
-        <file>asm/test01.asm</file>
-        <file>asm/test02.asm</file>
-        <file>asm/test03.asm</file>
-        <file>asm/test04.asm</file>
         <file>asm/math.inc</file>
-        <file>asm/test05.asm</file>
-        <file>asm/test06.asm</file>
+        <file>asm/test01-hello-w.asm</file>
+        <file>asm/test02-print-nums.asm</file>
+        <file>asm/test03-print-mult.asm</file>
+        <file>asm/test04-basic-input.asm</file>
+        <file>asm/test05-console.asm</file>
+        <file>asm/test06-bitmap-noise.asm</file>
+        <file>asm/test07-lines.asm</file>
     </qresource>
 </RCC>

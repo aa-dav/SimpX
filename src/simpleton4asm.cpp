@@ -885,7 +885,7 @@ static std::string getFilePath( const std::string &fileName )
     return res;
 }
 
-void Assembler::preProcessFile( const std::string &fileName )
+void Assembler::preProcessFile( const std::string &fileName, int parentFileNum, int parentLineNum )
 {
 	std::string line;
 	int innerLineNum = 0;
@@ -893,10 +893,10 @@ void Assembler::preProcessFile( const std::string &fileName )
 	files.emplace_back( fileName );
     std::shared_ptr< File > ifs;
     if ( !provider )
-        throw PreProcessorError( fileNum - 1, innerLineNum, "File provider is not set!" );
+        throw PreProcessorError( parentFileNum, parentLineNum, "File provider is not set!" );
     ifs = provider->open( fileName );
     if ( !ifs )
-        throw PreProcessorError( fileNum - 1, innerLineNum, "Cannot open file '" + fileName + "'!" );
+        throw PreProcessorError( parentFileNum, parentLineNum, "Cannot open file '" + fileName + "'!" );
     while ( !ifs->eof() )
 	{
         line = ifs->get_line();
@@ -914,7 +914,7 @@ void Assembler::preProcessFile( const std::string &fileName )
 				if ( lexems[ 1 ][ 0 ] != '"' )
 					throw PreProcessorError( fileNum, innerLineNum, "#include directive parameter must be quoted string!" );
                 std::string fn = getFilePath( fileName ) + &lexems[ 1 ][ 1 ];
-                preProcessFile( fn );
+                preProcessFile( fn, fileNum, innerLineNum );
 			}
 			else
 			{
@@ -935,7 +935,7 @@ bool Assembler::parseFile( const std::string &fileName )
 	try
 	{
 		lineNum = 0;
-		preProcessFile( fileName ); // preprocess
+        preProcessFile( fileName, 0, 0 ); // preprocess
 		// Preprocessed source dump:
 		/*
 		for ( int i = 0; i < lines.size(); i++ )
