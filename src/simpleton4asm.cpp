@@ -229,14 +229,24 @@ void Assembler::resolveForwards()
 	}
 }
 
+void Assembler::resolve(ExprNode &node)
+{
+    node.resolve( *this );
+    if ( !node.isReady() )
+    {
+        resolveForwards();
+        node.resolve( *this );
+    }
+}
+
 static bool isTerminal( char c )
 {
-	return (c == '(') || (c == ')') || (c == '[') || (c == ']');
+    return (c == '(') || (c == ')') || (c == '[') || (c == ']');
 };
 
 std::string Assembler::extractNextLexem( const std::string &parseString, size_t &parsePos )
 {
-	std::string res;
+    std::string res;
 	if ( parsePos >= parseString.length() )
 	{
 		return res;

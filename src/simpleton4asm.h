@@ -319,15 +319,7 @@ private:
     bool getNewSyntax() { return newSyntax; };
 
     void resolveForwards();
-    void resolve( ExprNode &node )
-    {
-        node.resolve( *this );
-        if ( !node.isReady() )
-        {
-            resolveForwards();
-            node.resolve( *this );
-        }
-    }
+    void resolve( ExprNode &node );
 
     void preProcessFile( const std::string &fileName, int parentFileNum, int parentLineNum );
 
