@@ -204,7 +204,7 @@ int CPU::triggerIRQ()
         setMem( --reg[ REG_SP ], reg[ REG_PC ] );
         setMem( --reg[ REG_SP ], reg[ REG_PSW ] );
         reg[ REG_PC ] = 0x10;
-        clocks++; // 1 clock time
+        clocks++;
     }
     return clocks - start_clocks;
 };
