@@ -1,0 +1,1 @@
+g++ -static -ffast-math -O2 -march=corei7 -masm=intel -std=gnu++17 alxvm.cpp alxvm_tokens.cpp main.cpp -o alxvm.exe

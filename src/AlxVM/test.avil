@@ -1,0 +1,17 @@
+module test
+
+function max 4
+param a 4
+param b 4
+local r 4
+
+begin
+	if_less a b 0
+	move r a
+	jump 1
+else
+	move r b
+end
+return r
+
+~function
