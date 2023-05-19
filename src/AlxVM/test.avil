@@ -1,4 +1,4 @@
-module test
+module testModule
 
 function max 4
 param a 4
@@ -12,6 +12,41 @@ begin
 else
 	move r b
 end
-return r
+result r
+return
+~function
 
+function mulByAdd 4
+param x 4
+param y 4
+local res 4
+local one 4
+
+const one 1
+const res 0
+begin
+	if_zero x 1
+	add res res y
+	sub x x one
+	jump -1
+end
+result res
+return
+~function
+
+function get10 4
+local res 4
+
+const res 10
+result res
+return
+~function
+
+function voidSome 0
+param x 4
+return
+~function
+
+function voidFull 0
+return
 ~function

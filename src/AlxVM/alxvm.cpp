@@ -15,7 +15,8 @@ struct OpcodeDescriptor
 static OpcodeDescriptor opcodes[] =
 {
 	// l - label, n - name, i - integer, j - jump direction
-	{OP_RETURN,	"return",	"l"},
+	{OP_RETURN,	"return",	""},
+	{OP_RESULT,	"result",	"l"},
 	{OP_CALL,	"call",		"nl"},
 	{OP_ECALL,	"ecall",	"nl"},
 	{OP_JUMP,	"jump",		"j"},
@@ -407,110 +408,69 @@ std::shared_ptr<Function> Runtime::getFunction( const std::string &moduleName, c
 	return modules.at(moduleName)->getFunction(functionName);
 };
 
-#define STACK_I32_CODEREF(index) stackAs<IntType>(frame.sp + codeAs<LabelOffset>(frame.ip + index))
-#define STACK_U32_CODEREF(index) stackAs<UIntType>(frame.sp + codeAs<LabelOffset>(frame.ip + index))
+#define STACK_CODEREF(type, index) stackAs<type>(frame.sp + codeAs<LabelOffset>(frame.ip + index))
+
+#define OPERATION_IMMED( type, immType, op ) STACK_CODEREF( type, opcodeSize ) = op codeAs<immType>( frame.ip + opcodeLabelSize ); \
+	frame.ip += opcodeSize + labelOffsetSize + sizeof(immType); \
+	break;
+#define OPERATION_UNARY( type, op ) STACK_CODEREF( type, opcodeSize ) = op STACK_CODEREF( type, opcodeLabelSize ); \
+	frame.ip += opcode2LabelSize; \
+	break;
+#define OPERATION_BINARY( type, op ) STACK_CODEREF( type, opcodeSize ) = STACK_CODEREF( type, opcodeLabelSize ) op STACK_CODEREF( type, opcode2LabelSize ); \
+	frame.ip += opcode3LabelSize; \
+	break;
+#define IF_UNARY( type, cond ) if ( STACK_CODEREF( type, opcodeSize ) cond ) \
+		frame.ip = codeAs<JumpPos>( frame.ip + opcodeLabelSize ); \
+	else \
+		frame.ip += ifUnarySize; \
+	break;
+#define IF_BINARY( type, cond ) if ( STACK_CODEREF( type, opcodeSize ) cond STACK_CODEREF( type, opcodeLabelSize ) ) \
+		frame.ip = codeAs<JumpPos>( frame.ip + opcode2LabelSize ); \
+	else \
+		frame.ip += ifBinarySize; \
+	break;
+
 
 int Runtime::oneStep()
 {
 	if ( frames.empty() )
 		return -1;
 	Frame &frame = frames.back();
-	int ip = frame.ip;
 	Opcode opcode = codeAs<Opcode>( frame.ip );
-	std::cout << "Step at " << ip << " opcode: " << (unsigned int) opcode << "\n";
+	//std::cout << "Step at " << frame.ip << " opcode: " << (unsigned int) opcode << "\n";
 	switch ( opcode )
 	{
-	case OP_RETURN: 	// l
-		stackAs<IntType>( frame.rp ) = STACK_I32_CODEREF( 1 );
+	case OP_RETURN:
 		frames.pop_back();
 		break;
-	case OP_CALL:	// nl
+	case OP_RESULT:
+		stackAs<IntType>( frame.rp ) = STACK_CODEREF( IntType, opcodeSize );
+		frame.ip += opcodeSize + labelOffsetSize;
 		break;
-	case OP_ECALL:	// nl
+	case OP_CALL:
 		break;
-	case OP_JUMP:	// j
+	case OP_ECALL:
+		break;
+	case OP_JUMP:
 		frame.ip = codeAs<JumpPos>( frame.ip + opcodeSize );
 		break;
-	case OP_IF_ZERO:	// lj
-		if ( STACK_I32_CODEREF( opcodeSize ) == 0 )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcodeLabelSize );
-		else
-			frame.ip += ifUnarySize;
-		break;
-	case OP_IF_NZERO:	// lj
-		if ( STACK_I32_CODEREF( opcodeSize ) != 0 )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcodeLabelSize );
-		else
-			frame.ip += ifUnarySize;
-		break;
-	case OP_IF_EQ:	// llj
-		if ( STACK_I32_CODEREF( opcodeSize ) == STACK_I32_CODEREF( opcodeLabelSize ) )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcode2LabelSize );
-		else
-			frame.ip += ifBinarySize;
-		break;
-	case OP_IF_NEQ:	// llj
-		if ( STACK_I32_CODEREF( opcodeSize ) != STACK_I32_CODEREF( opcodeLabelSize ) )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcode2LabelSize );
-		else
-			frame.ip += ifBinarySize;
-		break;
-	case OP_IF_LESS:	// llj
-		if ( STACK_I32_CODEREF( opcodeSize ) < STACK_I32_CODEREF( opcodeLabelSize ) )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcode2LabelSize );
-		else
-			frame.ip += ifBinarySize;
-		break;
-	case OP_IF_LESSEQ:	// llj
-		if ( STACK_I32_CODEREF( opcodeSize ) <= STACK_I32_CODEREF( opcodeLabelSize ) )
-			frame.ip = codeAs<JumpPos>( frame.ip + opcode2LabelSize );
-		else
-			frame.ip += ifBinarySize;
-		break;
-	case OP_CONST:	// li
-		STACK_I32_CODEREF( opcodeSize ) = codeAs<IntType>( frame.ip + opcodeLabelSize );
-		frame.ip += opcodeSize + labelOffsetSize + intSize;
-		break;
-	case OP_MOVE:	// ll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize );
-		frame.ip += opcode2LabelSize;
-		break;
-	case OP_ADD:		// lll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize ) + STACK_I32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_SUB:		// lll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize ) - STACK_I32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_MUL:		// lll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize ) * STACK_I32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_DIV:		// lll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize ) / STACK_I32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_MOD:		// lll
-		STACK_I32_CODEREF( opcodeSize ) = STACK_I32_CODEREF( opcodeLabelSize ) % STACK_I32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_NOT:		// ll
-		STACK_U32_CODEREF( opcodeSize ) = ~STACK_U32_CODEREF( opcodeLabelSize );
-		frame.ip += opcode2LabelSize;
-		break;
-	case OP_AND:		// lll
-		STACK_U32_CODEREF( opcodeSize ) = STACK_U32_CODEREF( opcodeLabelSize ) & STACK_U32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_OR:		// lll
-		STACK_U32_CODEREF( opcodeSize ) = STACK_U32_CODEREF( opcodeLabelSize ) | STACK_U32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
-	case OP_XOR:		// lll
-		STACK_U32_CODEREF( opcodeSize ) = STACK_U32_CODEREF( opcodeLabelSize ) ^ STACK_U32_CODEREF( opcode2LabelSize );
-		frame.ip += opcode3LabelSize;
-		break;
+	case OP_IF_ZERO:	IF_UNARY( IntType, == 0 );
+	case OP_IF_NZERO:	IF_UNARY( IntType, != 0 );
+	case OP_IF_EQ:		IF_BINARY( IntType, == );
+	case OP_IF_NEQ:		IF_BINARY( IntType, != );
+	case OP_IF_LESS:	IF_BINARY( IntType, < );
+	case OP_IF_LESSEQ:	IF_BINARY( IntType, <= );
+	case OP_CONST:		OPERATION_IMMED( IntType, IntType, );
+	case OP_MOVE:		OPERATION_UNARY( IntType, );
+	case OP_ADD:		OPERATION_BINARY( IntType, + );
+	case OP_SUB:		OPERATION_BINARY( IntType, - );
+	case OP_MUL:		OPERATION_BINARY( IntType, * );
+	case OP_DIV:		OPERATION_BINARY( IntType, / );
+	case OP_MOD:		OPERATION_BINARY( IntType, % );
+	case OP_NOT:		OPERATION_UNARY( UIntType, ~ );
+	case OP_AND:		OPERATION_BINARY( UIntType, & );
+	case OP_OR:		OPERATION_BINARY( UIntType, | );
+	case OP_XOR:		OPERATION_BINARY( UIntType, ^ );
 	default:
 		throw std::runtime_error(std::string("unknown opcode ") + std::to_string(opcode) + " at " + std::to_string(frame.ip));
 	};

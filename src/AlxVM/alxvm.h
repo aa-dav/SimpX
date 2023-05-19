@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <fstream>
+#include <iostream>
 #include "alxvm_tokens.h"
 
 namespace AlxVM
@@ -16,6 +17,7 @@ namespace AlxVM
 enum Opcodes
 {
 	OP_RETURN = 1,	// value
+	OP_RESULT,	// result
 	OP_CALL,	// function_handle, stack_frame
 	OP_ECALL,	// function_handle, stack_frame
 	OP_JUMP,	// addr
@@ -135,6 +137,21 @@ struct FunctionEntry
 	std::shared_ptr<Function> function;
 };
 
+/*
+template<class T>
+class TypedFunction
+{
+	std::shared_ptr<Function> function;
+	Runtime *runtime;
+public:
+	TypedFunction( std::shared_ptr<Function> aFunction, Runtime *aRuntime ): function( aFunction ), runtime( aRuntime ) {};
+	T operator()
+	{
+		return runtime.exec( function );
+	}
+};
+*/
+
 class Runtime
 {	
 	std::vector<char> stack;
@@ -164,9 +181,57 @@ public:
 	void startParams( StackPos top ) { topParamPos = top; };
 	template<class T>
 	void addParam(T value) { stackAs<T>( topParamPos ) = value; topParamPos += sizeof( T ); };
+	void addParams() {};
+	template<class T, typename...Args>
+	void addParams(T value, Args...args) { addParam(value); addParams(args...); };
 	int oneStep();
 	void execFunction( std::shared_ptr<Function> function, StackPos rp );
 };
+
+class TypedFunctionBase
+{
+protected:
+	std::shared_ptr<Function> function;
+	Runtime &runtime;
+public:
+	TypedFunctionBase( std::shared_ptr<Function> aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) {};
+	TypedFunctionBase( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
+	{
+		function = runtime.getFunction( moduleName, functionName );
+	};
+};
+
+template<typename...Args> class TypedFunction;
+
+template<class T, typename...Args>
+class TypedFunction<T(Args...)>: public TypedFunctionBase
+{
+	using TypedFunctionBase::TypedFunctionBase;
+public:
+	T operator()(Args...args)
+	{
+		//std::cout << "T exec(" << sizeof...(Args) << ")\n";
+		runtime.startParams(sizeof(T));
+		runtime.addParams( args... );
+		runtime.execFunction(function, 0);
+		return runtime.stackAs<T>(0);
+	}
+};
+
+template<typename...Args>
+class TypedFunction<void(Args...)>: public TypedFunctionBase
+{
+	using TypedFunctionBase::TypedFunctionBase;
+public:
+	void operator()(Args...args)
+	{
+		//std::cout << "void exec(" << sizeof...(Args) << ")\n";
+		runtime.startParams(0);
+		runtime.addParams( args... );
+		runtime.execFunction(function, 0);
+	}
+};
+
 
 };
 
