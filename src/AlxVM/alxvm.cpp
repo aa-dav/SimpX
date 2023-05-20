@@ -14,30 +14,50 @@ struct OpcodeDescriptor
 
 static OpcodeDescriptor opcodes[] =
 {
-	// l - label, n - name, i - integer, j - jump direction
-	{OP_RETURN,	"return",	""},
-	{OP_RESULT,	"result",	"l"},
-	{OP_CALL,	"call",		"nl"},
-	{OP_ECALL,	"ecall",	"nl"},
-	{OP_JUMP,	"jump",		"j"},
-	{OP_IF_ZERO,	"if_zero",	"lj"},
-	{OP_IF_NZERO,	"if_nzero",	"lj"},
-	{OP_IF_EQ,	"if_eq",	"llj"},
-	{OP_IF_NEQ,	"if_nqe",	"llj"},
-	{OP_IF_LESS,	"if_less",	"llj"},
-	{OP_IF_LESSEQ,	"if_lesseq",	"llj"},
-	{OP_CONST,	"const",	"li"},
-	{OP_MOVE,	"move",		"ll"},
-	{OP_ADD,	"add",		"lll"},
-	{OP_SUB,	"sub",		"lll"},
-	{OP_MUL,	"mul",		"lll"},
-	{OP_DIV,	"div",		"lll"},
-	{OP_MOD,	"mod",		"lll"},
-	{OP_NOT,	"not",		"ll"},
-	{OP_AND,	"and",		"lll"},
-	{OP_OR,		"or",		"lll"},
-	{OP_XOR,	"xor",		"lll"},
-	{0,		nullptr,	nullptr}	// end of tables
+	// l - label, n - name, i - integer, d - double, j - jump direction
+	{OP_RETURN,		"return",		""},
+	// typed returns
+	{OP_X32_RETURN,		"return.x32",		"l"},
+	{OP_X64_RETURN,		"return.x64",		"l"},
+	{OP_D64_RETURN,		"return.d64",		"l"},
+	// calls/jumps
+	{OP_CALL,		"call",			"nl"},
+	{OP_ECALL,		"ecall",		"nl"},
+	{OP_JUMP,		"jump",			"j"},
+	// integers
+	{OP_X32_IF_ZERO,	"if_zero.x32",		"lj"},
+	{OP_X32_IF_NZERO,	"if_nzero.x32",		"lj"},
+	{OP_X32_IF_EQ,		"if_eq.x32",		"llj"},
+	{OP_X32_IF_NEQ,		"if_nqe.x32",		"llj"},
+	{OP_I32_IF_LESS,	"if_less.i32",		"llj"},
+	{OP_I32_IF_LESSEQ,	"if_lesseq.i32",	"llj"},
+	{OP_U32_IF_LESS,	"if_less.u32",		"llj"},
+	{OP_U32_IF_LESSEQ,	"if_lesseq.u32",	"llj"},
+	{OP_X32_CONST,		"const.x32",		"li"},
+	{OP_X32_MOVE,		"move.x32",		"ll"},
+	{OP_X32_ADD,		"add.x32",		"lll"},
+	{OP_X32_SUB,		"sub.x32",		"lll"},
+	{OP_I32_MUL,		"mul.i32",		"lll"},
+	{OP_I32_DIV,		"div.i32",		"lll"},
+	{OP_I32_MOD,		"mod.i32",		"lll"},
+	{OP_U32_NOT,		"not.u32",		"ll"},
+	{OP_U32_AND,		"and.u32",		"lll"},
+	{OP_U32_OR,		"or.u32",		"lll"},
+	{OP_U32_XOR,		"xor.u32",		"lll"},
+	// doubles
+	{OP_D64_IF_ZERO,	"if_zero.d64",		"lj"},
+	{OP_D64_IF_NZERO,	"if_nzero.d64",		"lj"},
+	{OP_D64_IF_EQ,		"if_eq.d64",		"llj"},
+	{OP_D64_IF_NEQ,		"if_nqe.d64",		"llj"},
+	{OP_D64_IF_LESS,	"if_less.d64",		"llj"},
+	{OP_D64_IF_LESSEQ,	"if_lesseq.d64",	"llj"},
+	{OP_D64_CONST,		"const.d64",		"ld"},
+	{OP_D64_MOVE,		"move.d64",		"ll"},
+	{OP_D64_ADD,		"add.d64",		"lll"},
+	{OP_D64_SUB,		"sub.d64",		"lll"},
+	{OP_D64_MUL,		"mul.d64",		"lll"},
+	{OP_D64_DIV,		"div.d64",		"lll"},
+	{0,			nullptr,		nullptr}	// end of table
 };
 
 // ******************************************
@@ -358,6 +378,11 @@ void Runtime::compile(Tokenizer &tokenizer)
 						argToken = parseType(tokenizer, TOKEN_INTEGER, "integer");
 						codeEmit<IntType>( argToken.asInt() );
 					}
+					else if ( *args == 'd' )
+					{
+						argToken = parseType(tokenizer, TOKEN_DOUBLE, "double");
+						codeEmit<DoubleType>( argToken.asDouble() );
+					}
 					else if ( *args == 'j' )
 					{
 						
@@ -440,13 +465,24 @@ int Runtime::oneStep()
 	//std::cout << "Step at " << frame.ip << " opcode: " << (unsigned int) opcode << "\n";
 	switch ( opcode )
 	{
+	// return
 	case OP_RETURN:
 		frames.pop_back();
 		break;
-	case OP_RESULT:
+	// typed returns
+	case OP_X32_RETURN:
 		stackAs<IntType>( frame.rp ) = STACK_CODEREF( IntType, opcodeSize );
-		frame.ip += opcodeSize + labelOffsetSize;
+		frames.pop_back();
 		break;
+	case OP_X64_RETURN:
+		stackAs<LIntType>( frame.rp ) = STACK_CODEREF( LIntType, opcodeSize );
+		frames.pop_back();
+		break;
+	case OP_D64_RETURN:
+		stackAs<DoubleType>( frame.rp ) = STACK_CODEREF( DoubleType, opcodeSize );
+		frames.pop_back();
+		break;
+	// calls/jumps
 	case OP_CALL:
 		break;
 	case OP_ECALL:
@@ -454,23 +490,39 @@ int Runtime::oneStep()
 	case OP_JUMP:
 		frame.ip = codeAs<JumpPos>( frame.ip + opcodeSize );
 		break;
-	case OP_IF_ZERO:	IF_UNARY( IntType, == 0 );
-	case OP_IF_NZERO:	IF_UNARY( IntType, != 0 );
-	case OP_IF_EQ:		IF_BINARY( IntType, == );
-	case OP_IF_NEQ:		IF_BINARY( IntType, != );
-	case OP_IF_LESS:	IF_BINARY( IntType, < );
-	case OP_IF_LESSEQ:	IF_BINARY( IntType, <= );
-	case OP_CONST:		OPERATION_IMMED( IntType, IntType, );
-	case OP_MOVE:		OPERATION_UNARY( IntType, );
-	case OP_ADD:		OPERATION_BINARY( IntType, + );
-	case OP_SUB:		OPERATION_BINARY( IntType, - );
-	case OP_MUL:		OPERATION_BINARY( IntType, * );
-	case OP_DIV:		OPERATION_BINARY( IntType, / );
-	case OP_MOD:		OPERATION_BINARY( IntType, % );
-	case OP_NOT:		OPERATION_UNARY( UIntType, ~ );
-	case OP_AND:		OPERATION_BINARY( UIntType, & );
-	case OP_OR:		OPERATION_BINARY( UIntType, | );
-	case OP_XOR:		OPERATION_BINARY( UIntType, ^ );
+	// integers
+	case OP_X32_IF_ZERO:	IF_UNARY( IntType, == 0 );
+	case OP_X32_IF_NZERO:	IF_UNARY( IntType, != 0 );
+	case OP_X32_IF_EQ:	IF_BINARY( IntType, == );
+	case OP_X32_IF_NEQ:	IF_BINARY( IntType, != );
+	case OP_I32_IF_LESS:	IF_BINARY( IntType, < );
+	case OP_I32_IF_LESSEQ:	IF_BINARY( IntType, <= );
+	case OP_U32_IF_LESS:	IF_BINARY( UIntType, < );
+	case OP_U32_IF_LESSEQ:	IF_BINARY( UIntType, <= );
+	case OP_X32_CONST:	OPERATION_IMMED( IntType, IntType, );
+	case OP_X32_MOVE:	OPERATION_UNARY( IntType, );
+	case OP_X32_ADD:	OPERATION_BINARY( IntType, + );
+	case OP_X32_SUB:	OPERATION_BINARY( IntType, - );
+	case OP_I32_MUL:	OPERATION_BINARY( IntType, * );
+	case OP_I32_DIV:	OPERATION_BINARY( IntType, / );
+	case OP_I32_MOD:	OPERATION_BINARY( IntType, % );
+	case OP_U32_NOT:	OPERATION_UNARY( UIntType, ~ );
+	case OP_U32_AND:	OPERATION_BINARY( UIntType, & );
+	case OP_U32_OR:		OPERATION_BINARY( UIntType, | );
+	case OP_U32_XOR:	OPERATION_BINARY( UIntType, ^ );
+	// doubles
+	case OP_D64_IF_ZERO:	IF_UNARY( DoubleType, == 0.0 );
+	case OP_D64_IF_NZERO:	IF_UNARY( DoubleType, != 0.0 );
+	case OP_D64_IF_EQ:	IF_BINARY( DoubleType, == );
+	case OP_D64_IF_NEQ:	IF_BINARY( DoubleType, != );
+	case OP_D64_IF_LESS:	IF_BINARY( DoubleType, < );
+	case OP_D64_IF_LESSEQ:	IF_BINARY( DoubleType, <= );
+	case OP_D64_CONST:	OPERATION_IMMED( DoubleType, DoubleType, );
+	case OP_D64_MOVE:	OPERATION_UNARY( DoubleType, );
+	case OP_D64_ADD:	OPERATION_BINARY( DoubleType, + );
+	case OP_D64_SUB:	OPERATION_BINARY( DoubleType, - );
+	case OP_D64_MUL:	OPERATION_BINARY( DoubleType, * );
+	case OP_D64_DIV:	OPERATION_BINARY( DoubleType, / );
 	default:
 		throw std::runtime_error(std::string("unknown opcode ") + std::to_string(opcode) + " at " + std::to_string(frame.ip));
 	};

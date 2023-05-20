@@ -25,4 +25,7 @@ int main(int argc, const char *agrv[])
 	AlxVM::TypedFunction<void()> funcVoidFull( runtime, "testModule", "voidFull" );
 	funcVoidFull();
 	std::cout << "voidFull\n";
+
+	AlxVM::TypedFunction<double(double, double)> funcAddDoublesPlus10( runtime, "testModule", "addDoublesPlus10" );
+	std::cout << "addDoublesPlus10: " << funcAddDoublesPlus10( 10, 30.0f ) << "\n";
 }

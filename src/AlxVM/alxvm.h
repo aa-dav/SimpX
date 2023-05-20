@@ -16,36 +16,60 @@ namespace AlxVM
 
 enum Opcodes
 {
-	OP_RETURN = 1,	// value
-	OP_RESULT,	// result
-	OP_CALL,	// function_handle, stack_frame
-	OP_ECALL,	// function_handle, stack_frame
-	OP_JUMP,	// addr
-	OP_IF_ZERO,	// a == 0, addr
-	OP_IF_NZERO,	// a != 0, addr
-	OP_IF_EQ,	// a == b, addr
-	OP_IF_NEQ,	// a != b, addr
-	OP_IF_LESS,	// a < b, addr
-	OP_IF_LESSEQ,	// a <= b, addr
-	OP_CONST,	// dest, const
-	OP_MOVE,	// dest, const
-	OP_ADD,		// a = b + c
-	OP_SUB,		// a = b - c
-	OP_MUL,		// a = b * c
-	OP_DIV,		// a = b / c
-	OP_MOD,		// a = b % c
-	OP_NOT,		// a = ~b
-	OP_AND,		// a = b & c
-	OP_OR,		// a = b | c
-	OP_XOR,		// a = b ^ c
+	// return
+	OP_RETURN = 1,		// 
+	// typed returns
+	OP_X32_RETURN,		// value
+	OP_X64_RETURN,		// value
+	OP_D64_RETURN,		// value
+	// calls/jumps
+	OP_CALL,		// function_handle, stack_frame
+	OP_ECALL,		// function_handle, stack_frame
+	OP_JUMP,		// addr
+	// integers
+	OP_X32_IF_ZERO,		// a == 0, addr
+	OP_X32_IF_NZERO,	// a != 0, addr
+	OP_X32_IF_EQ,		// a == b, addr
+	OP_X32_IF_NEQ,		// a != b, addr
+	OP_I32_IF_LESS,		// a < b, addr
+	OP_I32_IF_LESSEQ,	// a <= b, addr
+	OP_U32_IF_LESS,		// a < b, addr
+	OP_U32_IF_LESSEQ,	// a <= b, addr
+	OP_X32_CONST,		// dest, const
+	OP_X32_MOVE,		// dest, const
+	OP_X32_ADD,		// a = b + c
+	OP_X32_SUB,		// a = b - c
+	OP_I32_MUL,		// a = b * c
+	OP_I32_DIV,		// a = b / c
+	OP_I32_MOD,		// a = b % c
+	OP_U32_NOT,		// a = ~b
+	OP_U32_AND,		// a = b & c
+	OP_U32_OR,		// a = b | c
+	OP_U32_XOR,		// a = b ^ c
+	// doubles
+	OP_D64_IF_ZERO,		// a == 0, addr
+	OP_D64_IF_NZERO,	// a != 0, addr
+	OP_D64_IF_EQ,		// a == b, addr
+	OP_D64_IF_NEQ,		// a != b, addr
+	OP_D64_IF_LESS,		// a < b, addr
+	OP_D64_IF_LESSEQ,	// a <= b, addr
+	OP_D64_CONST,		// dest, const
+	OP_D64_MOVE,		// dest, const
+	OP_D64_ADD,		// a = b + c
+	OP_D64_SUB,		// a = b - c
+	OP_D64_MUL,		// a = b * c
+	OP_D64_DIV,		// a = b / c
 };
 
 typedef unsigned char	Opcode;		// type of the opcode
 typedef int16_t		LabelOffset;	// type of offset to label on the stack in the instruction
 typedef uint16_t	StackPos;	// type of the index in the stack
 typedef uint16_t	JumpPos;	// type of the index in the code
-typedef int32_t		IntType;	// default int type
-typedef uint32_t	UIntType;	// default unsigned int type
+typedef int32_t		IntType;	// int type
+typedef uint32_t	UIntType;	// unsigned int type
+typedef int32_t		LIntType;	// long int type
+typedef uint32_t	LUIntType;	// long unsigned int type
+typedef double		DoubleType;	// double type
 typedef uint32_t	PtrType;	// type of the pointer in the heap
 
 const int opcodeSize		= sizeof(Opcode);
