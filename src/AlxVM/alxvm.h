@@ -63,6 +63,10 @@ const int opcode3LabelSize	= opcodeSize + 3 * labelOffsetSize;
 class Module;
 class Runtime;
 
+// ******************************************
+// *                Function                *
+// ******************************************
+
 struct Variable
 {
 	std::string name;
@@ -90,6 +94,8 @@ public:
 	const std::string &getName() const { return name; };
 	int getReturnSize() const { return returnSize; };
 	int getParamsSize() const { return paramsSize; };
+	int getParamsCount() const { return params.size(); };
+	int getParamSize( int index ) const { return params[ index ].size; };
 	int getLocalsSize() const { return localsSize; };
 	void setStart(JumpPos aStart) { start = aStart; }
 	JumpPos getStart() { return start; };
@@ -106,6 +112,10 @@ public:
 	friend class Frame;
 };
 
+// ******************************************
+// *                  Frame                 *
+// ******************************************
+
 struct Frame
 {	
 	std::shared_ptr<Function> function;
@@ -115,6 +125,10 @@ struct Frame
 
 	Frame(std::shared_ptr<Function> aFunction, StackPos aSp, StackPos aRp, JumpPos anIp): function(aFunction), sp(aSp), rp(aRp), ip(anIp) {};
 };
+
+// ******************************************
+// *                 Module                 *
+// ******************************************
 
 class Module
 {
@@ -131,26 +145,15 @@ public:
 	void dump( Runtime &runtime );
 };
 
+// ******************************************
+// *                Runtime                 *
+// ******************************************
+
 struct FunctionEntry
 {
 	std::string name;
 	std::shared_ptr<Function> function;
 };
-
-/*
-template<class T>
-class TypedFunction
-{
-	std::shared_ptr<Function> function;
-	Runtime *runtime;
-public:
-	TypedFunction( std::shared_ptr<Function> aFunction, Runtime *aRuntime ): function( aFunction ), runtime( aRuntime ) {};
-	T operator()
-	{
-		return runtime.exec( function );
-	}
-};
-*/
 
 class Runtime
 {	
@@ -188,47 +191,97 @@ public:
 	void execFunction( std::shared_ptr<Function> function, StackPos rp );
 };
 
-class TypedFunctionBase
+// ******************************************
+// *           ArgumentsChecker             *
+// ******************************************
+
+template<typename... Args> struct ArgumentsChecker;
+
+template<>
+struct ArgumentsChecker<>
 {
-protected:
-	std::shared_ptr<Function> function;
-	Runtime &runtime;
-public:
-	TypedFunctionBase( std::shared_ptr<Function> aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) {};
-	TypedFunctionBase( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
-	{
-		function = runtime.getFunction( moduleName, functionName );
-	};
+	static void check( std::shared_ptr< Function > function, int index ) {};
 };
 
-template<typename...Args> class TypedFunction;
-
-template<class T, typename...Args>
-class TypedFunction<T(Args...)>: public TypedFunctionBase
+template<typename T, typename... Args>
+struct ArgumentsChecker<T, Args...>
 {
-	using TypedFunctionBase::TypedFunctionBase;
-public:
-	T operator()(Args...args)
+	static void check( std::shared_ptr< Function > function, int index )
 	{
-		//std::cout << "T exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams(sizeof(T));
-		runtime.addParams( args... );
-		runtime.execFunction(function, 0);
-		return runtime.stackAs<T>(0);
+		if ( function->getParamSize( index ) != sizeof( T ) )
+			throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + 
+						": wrong param " + std::to_string( index + 1 ) + " size " +
+						std::to_string( function->getParamSize( index ) ) + " instead of " + std::to_string( sizeof( T ) ) + "." );
+		ArgumentsChecker< Args... >::check( function, index + 1 );
 	}
 };
 
-template<typename...Args>
-class TypedFunction<void(Args...)>: public TypedFunctionBase
+template< typename... Args >
+static void checkFunctionCompatibility( std::shared_ptr< Function > function, int sizeOfReturn )
 {
-	using TypedFunctionBase::TypedFunctionBase;
+	if ( function->getReturnSize() != sizeOfReturn )
+		throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + ": wrong return size " +
+					std::to_string( function->getReturnSize() ) + " instead of " + std::to_string( sizeOfReturn ) + "." );
+	if ( function->getParamsCount() != sizeof...( Args ) )
+		throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + ": wrong params count " +
+					std::to_string( function->getParamsCount() ) + " instead of " + std::to_string( sizeof...( Args ) ) + "." );
+	ArgumentsChecker< Args... >::check( function, 0 );
+};
+
+// ******************************************
+// *             TypedFunction              *
+// ******************************************
+
+template< typename... Args > class TypedFunction;
+
+template< class T, typename... Args >
+class TypedFunction< T( Args... ) >
+{
+	std::shared_ptr< Function > function;
+	Runtime &runtime;
+
 public:
-	void operator()(Args...args)
+	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
+	{
+		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
+	};
+	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
+	{
+		function = runtime.getFunction( moduleName, functionName );
+		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
+	};
+	T operator()( Args...args )
+	{
+		//std::cout << "T exec(" << sizeof...(Args) << ")\n";
+		runtime.startParams( sizeof( T ) );
+		runtime.addParams( args... );
+		runtime.execFunction( function, 0 );
+		return runtime.stackAs< T >( 0 );
+	}
+};
+
+template< typename... Args >
+class TypedFunction< void( Args... ) >
+{
+	std::shared_ptr< Function > function;
+	Runtime &runtime;
+
+public:
+	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
+	{
+		checkFunctionCompatibility< Args... >( function, 0 );
+	};
+	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
+	{
+		function = runtime.getFunction( moduleName, functionName );
+		checkFunctionCompatibility< Args... >( function, 0 );
+	};
+	void operator()( Args... args )
 	{
 		//std::cout << "void exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams(0);
+		runtime.startParams( 0 );
 		runtime.addParams( args... );
-		runtime.execFunction(function, 0);
+		runtime.execFunction( function, 0 );
 	}
 };
 
