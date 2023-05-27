@@ -9,6 +9,7 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include <functional>
 #include "alxvm_tokens.h"
 
 namespace AlxVM
@@ -21,11 +22,16 @@ enum Opcodes
 	// typed returns
 	OP_X32_RETURN,		// value
 	OP_X64_RETURN,		// value
-	OP_D64_RETURN,		// value
+	OP_F64_RETURN,		// value
 	// calls/jumps
 	OP_CALL,		// function_handle, stack_frame
-	OP_ECALL,		// function_handle, stack_frame
+	OP_NCALL,		// function_handle, stack_frame
 	OP_JUMP,		// addr
+	// conversions
+	OP_CAST_I32_TO_F64,	// a = b
+	OP_CAST_F64_TO_I32,	// a = b
+	OP_CAST_U32_TO_F64,	// a = b
+	OP_CAST_F64_TO_U32,	// a = b
 	// integers
 	OP_X32_IF_ZERO,		// a == 0, addr
 	OP_X32_IF_NZERO,	// a != 0, addr
@@ -47,18 +53,18 @@ enum Opcodes
 	OP_U32_OR,		// a = b | c
 	OP_U32_XOR,		// a = b ^ c
 	// doubles
-	OP_D64_IF_ZERO,		// a == 0, addr
-	OP_D64_IF_NZERO,	// a != 0, addr
-	OP_D64_IF_EQ,		// a == b, addr
-	OP_D64_IF_NEQ,		// a != b, addr
-	OP_D64_IF_LESS,		// a < b, addr
-	OP_D64_IF_LESSEQ,	// a <= b, addr
-	OP_D64_CONST,		// dest, const
-	OP_D64_MOVE,		// dest, const
-	OP_D64_ADD,		// a = b + c
-	OP_D64_SUB,		// a = b - c
-	OP_D64_MUL,		// a = b * c
-	OP_D64_DIV,		// a = b / c
+	OP_F64_IF_ZERO,		// a == 0, addr
+	OP_F64_IF_NZERO,	// a != 0, addr
+	OP_F64_IF_EQ,		// a == b, addr
+	OP_F64_IF_NEQ,		// a != b, addr
+	OP_F64_IF_LESS,		// a < b, addr
+	OP_F64_IF_LESSEQ,	// a <= b, addr
+	OP_F64_CONST,		// dest, const
+	OP_F64_MOVE,		// dest, const
+	OP_F64_ADD,		// a = b + c
+	OP_F64_SUB,		// a = b - c
+	OP_F64_MUL,		// a = b * c
+	OP_F64_DIV,		// a = b / c
 };
 
 typedef unsigned char	Opcode;		// type of the opcode
@@ -86,6 +92,7 @@ const int opcode3LabelSize	= opcodeSize + 3 * labelOffsetSize;
 
 class Module;
 class Runtime;
+class NativeFunctionBase;
 
 // ******************************************
 // *                Function                *
@@ -112,7 +119,7 @@ class Function
 	std::vector<Variable> params;
 	std::vector<Variable> locals;
 public:
-	Function(Module *aModule, const std::string &aName, int aReturnSize): module(aModule), name(aName), returnSize(aReturnSize) {};
+	Function(Module *aModule, const std::string &aName, int aReturnSize): module(aModule), name(aName), returnSize(aReturnSize), localsSize(0) {};
 
 	Module *getModule() { return module; };
 	const std::string &getName() const { return name; };
@@ -164,6 +171,7 @@ public:
 	const std::string &getName() const { return name; };
 
 	void addFunction(std::shared_ptr<Function> func) { functions.emplace(std::pair(func->getName(), func)); };
+	bool hasFunction(const std::string &name) { return functions.find(name) != functions.end(); };
 	std::shared_ptr<Function> getFunction(const std::string &name) { return functions.at(name); };
 	void parseComplete();
 	void dump( Runtime &runtime );
@@ -177,6 +185,14 @@ struct FunctionEntry
 {
 	std::string name;
 	std::shared_ptr<Function> function;
+	FunctionEntry( const std::string &aName ): name( aName ) {};
+};
+
+struct NativeFunctionEntry
+{
+	std::string name;
+	NativeFunctionBase *function;
+	NativeFunctionEntry( const std::string &aName, NativeFunctionBase *aFunction ): name( aName ), function( aFunction ) {};
 };
 
 class Runtime
@@ -185,12 +201,14 @@ class Runtime
 	std::vector<char> code;
 	std::vector<Frame> frames;
 	std::vector<FunctionEntry> functionEntries;
+	std::vector<NativeFunctionEntry> nativeFunctions;
 	std::map<std::string, std::shared_ptr<Module> > modules;
 	StackPos topParamPos;
 	
 	void parseEOL(Tokenizer &tokenizer);
 	Token parseType(Tokenizer &tokenizer, TokenType type, const std::string expected, bool allow_ends = false);
 public:
+	~Runtime() { freeNativeFunctions(); };
 	Runtime(StackPos stackSize): stack(stackSize) {};
 	
 	template<class T>
@@ -213,103 +231,19 @@ public:
 	void addParams(T value, Args...args) { addParam(value); addParams(args...); };
 	int oneStep();
 	void execFunction( std::shared_ptr<Function> function, StackPos rp );
+	JumpPos findOrCreateFunctionEntry( const std::string &name );
+	void freeNativeFunctions();
+	void addNativeFunction( const std::string &name, NativeFunctionBase *function );
+	JumpPos findNativeFunctionEntry( const std::string &name );
 };
 
-// ******************************************
-// *           ArgumentsChecker             *
-// ******************************************
-
-template<typename... Args> struct ArgumentsChecker;
-
-template<>
-struct ArgumentsChecker<>
-{
-	static void check( std::shared_ptr< Function > function, int index ) {};
-};
-
-template<typename T, typename... Args>
-struct ArgumentsChecker<T, Args...>
-{
-	static void check( std::shared_ptr< Function > function, int index )
-	{
-		if ( function->getParamSize( index ) != sizeof( T ) )
-			throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + 
-						": wrong param " + std::to_string( index + 1 ) + " size " +
-						std::to_string( function->getParamSize( index ) ) + " instead of " + std::to_string( sizeof( T ) ) + "." );
-		ArgumentsChecker< Args... >::check( function, index + 1 );
-	}
-};
-
-template< typename... Args >
-static void checkFunctionCompatibility( std::shared_ptr< Function > function, int sizeOfReturn )
-{
-	if ( function->getReturnSize() != sizeOfReturn )
-		throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + ": wrong return size " +
-					std::to_string( function->getReturnSize() ) + " instead of " + std::to_string( sizeOfReturn ) + "." );
-	if ( function->getParamsCount() != sizeof...( Args ) )
-		throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + ": wrong params count " +
-					std::to_string( function->getParamsCount() ) + " instead of " + std::to_string( sizeof...( Args ) ) + "." );
-	ArgumentsChecker< Args... >::check( function, 0 );
-};
-
-// ******************************************
-// *             TypedFunction              *
-// ******************************************
-
-template< typename... Args > class TypedFunction;
-
-template< class T, typename... Args >
-class TypedFunction< T( Args... ) >
-{
-	std::shared_ptr< Function > function;
-	Runtime &runtime;
-
+class NativeFunctionBase
+{	
 public:
-	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
-	{
-		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
-	};
-	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
-	{
-		function = runtime.getFunction( moduleName, functionName );
-		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
-	};
-	T operator()( Args...args )
-	{
-		//std::cout << "T exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams( sizeof( T ) );
-		runtime.addParams( args... );
-		runtime.execFunction( function, 0 );
-		return runtime.stackAs< T >( 0 );
-	}
+	virtual ~NativeFunctionBase() {};
+	virtual void invoke( Runtime &runtime, StackPos params, StackPos rp ) = 0;
 };
 
-template< typename... Args >
-class TypedFunction< void( Args... ) >
-{
-	std::shared_ptr< Function > function;
-	Runtime &runtime;
-
-public:
-	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
-	{
-		checkFunctionCompatibility< Args... >( function, 0 );
-	};
-	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
-	{
-		function = runtime.getFunction( moduleName, functionName );
-		checkFunctionCompatibility< Args... >( function, 0 );
-	};
-	void operator()( Args... args )
-	{
-		//std::cout << "void exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams( 0 );
-		runtime.addParams( args... );
-		runtime.execFunction( function, 0 );
-	}
-};
-
-
-};
+}
 
 #endif

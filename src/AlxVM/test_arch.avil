@@ -1,0 +1,83 @@
+module testModule
+
+function max 4
+	param a 4
+	param b 4
+	local r 4
+
+	begin
+		if_less.i32 a b 0
+		move.x32 r a
+		jump 1
+	else
+		move.x32 r b
+	end
+	return.x32 r
+~function
+
+function mulByAdd 4
+	param x 4
+	param y 4
+	local res 4
+	local one 4
+
+	const.x32 one 1
+	const.x32 res 0
+	begin
+		if_zero.x32 x 1
+		add.x32 res res y
+		sub.x32 x x one
+		jump -1
+	end
+	return.x32 res
+~function
+
+function get10 4
+	local res 4
+
+	const.x32 res 10
+	return.x32 res
+~function
+
+function voidSome 0
+	param x 4
+	return
+~function
+
+function voidFull 0
+	return
+~function
+
+function addDoubles 8
+	param x 8
+	param y 8
+	local z 4
+	local dz 8
+	local res 8
+	local get10start 4
+
+	call z get10start get10
+	cast.i32.f64 dz z
+	add.f64 res x y
+	add.f64 res res dz
+	return.f64 res
+~function
+
+function factorial 4
+	param x 4
+	local ret 4
+	local prev 4
+	local one 4
+	local fact_x 4
+	local fact_start 4
+	begin
+		if_nzero.x32 x 1
+		const.x32 ret 1
+		return.x32 ret
+	end
+	const.x32 one 1
+	sub.x32 fact_x x one
+	call prev fact_start factorial
+	mul.i32 ret prev x
+	return.x32 ret
+~function

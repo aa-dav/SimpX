@@ -1,31 +1,26 @@
 #include <iostream>
 #include "alxvm.h"
 #include "alxvm_tokens.h"
+#include "alxvm_templates.h"
+
+int sub( int x, int y )
+{
+	return x - y;
+};
 
 int main(int argc, const char *agrv[])
 {
 	AlxVM::FileTokenizer tokenizer( "test.avil" );	// будем разбирать на токены файл test.avil
 	AlxVM::Runtime runtime( 1024 );		// параметр - размер стека
+
+	AlxVM::bindNativeFunction( runtime, "sub", sub );
+
 	runtime.compile(tokenizer);		// компилируем из токенайзера
 	//runtime.dump();				// выведем отладочную информацию
-	
-	AlxVM::TypedFunction<int32_t()> funcGet10( runtime, "testModule", "get10" );
-	std::cout << "get10: " << funcGet10() << "\n";
 
-	AlxVM::TypedFunction<int32_t(int32_t, int32_t)> funcMax( runtime, "testModule", "max" );
-	std::cout << "max: " << funcMax( -10, 20 ) << "\n";
-	std::cout << "max: " << funcMax( 777, 5 ) << "\n";
-	std::cout << "max: " << funcMax( -908, 333 ) << "\n";
-	std::cout << "max: " << funcMax( 5, 6 ) << "\n";
+	AlxVM::TypedFunction<int(int, int)> funcCallNative2( runtime, "testModule", "callNative2" );
+	for ( int i = 1; i <= 10; i ++ )
+		std::cout << "callNative(" << i << "): " << funcCallNative2(100, i) << "\n";
 
-	AlxVM::TypedFunction<void(int32_t)> funcVoidSome( runtime, "testModule", "voidSome" );
-	funcVoidSome( 10 );
-	std::cout << "voidSome\n";
-
-	AlxVM::TypedFunction<void()> funcVoidFull( runtime, "testModule", "voidFull" );
-	funcVoidFull();
-	std::cout << "voidFull\n";
-
-	AlxVM::TypedFunction<double(double, double)> funcAddDoublesPlus10( runtime, "testModule", "addDoublesPlus10" );
-	std::cout << "addDoublesPlus10: " << funcAddDoublesPlus10( 10, 30.0f ) << "\n";
+	return 0;
 }

@@ -4,6 +4,21 @@ function max 4
 	param a 4
 	param b 4
 	local r 4
+	slice
+		local x 8
+		local y 8
+	~slice
+	slice
+		local z 4
+		local w 4
+		slice
+			local t 4
+		~slice
+		slice
+			local v 8
+		~slice
+	~slice
+	local bottom 8 32
 
 	begin
 		if_less.i32 a b 0
@@ -15,47 +30,17 @@ function max 4
 	return.x32 r
 ~function
 
-function mulByAdd 4
+function callNative2 4
 	param x 4
 	param y 4
-	local res 4
-	local one 4
-
-	const.x32 one 1
-	const.x32 res 0
-	begin
-		if_zero.x32 x 1
-		add.x32 res res y
-		sub.x32 x x one
-		jump -1
-	end
-	return.x32 res
-~function
-
-function get10 4
-	local res 4
-
-	const.x32 res 10
-	return.x32 res
-~function
-
-function voidSome 0
-	param x 4
-	return
-~function
-
-function voidFull 0
-	return
-~function
-
-function addDoublesPlus10 8
-	param x 8
-	param y 8
-	local ten 8
-	local res 8
-
-	const.d64 ten 10.0
-	add.d64 res x y
-	add.d64 res res ten
-	return.d64 res
+	local r 4
+	slice
+		local nativeParam1 4
+		local nativeParam2 4
+		local nativeStart 0
+	~slice
+	move.x32 nativeParam1 x
+	move.x32 nativeParam2 y
+	ncall r nativeStart sub
+	return.x32 r
 ~function

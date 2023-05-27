@@ -14,16 +14,26 @@ struct OpcodeDescriptor
 
 static OpcodeDescriptor opcodes[] =
 {
-	// l - label, n - name, i - integer, d - double, j - jump direction
+	// l - label, 
+	// n - function name
+	// m - native function name
+	// i - integer 32 literal
+	// d - double literal
+	// j - jump direction
 	{OP_RETURN,		"return",		""},
 	// typed returns
 	{OP_X32_RETURN,		"return.x32",		"l"},
 	{OP_X64_RETURN,		"return.x64",		"l"},
-	{OP_D64_RETURN,		"return.d64",		"l"},
+	{OP_F64_RETURN,		"return.f64",		"l"},
 	// calls/jumps
-	{OP_CALL,		"call",			"nl"},
-	{OP_ECALL,		"ecall",		"nl"},
+	{OP_CALL,		"call",			"lln"},
+	{OP_NCALL,		"ncall",		"llm"},
 	{OP_JUMP,		"jump",			"j"},
+	// conversions
+	{OP_CAST_I32_TO_F64,	"cast.i32.f64",		"ll"},
+	{OP_CAST_F64_TO_I32,	"cast.f64.i32",		"ll"},
+	{OP_CAST_I32_TO_F64,	"cast.u32.f64",		"ll"},
+	{OP_CAST_I32_TO_F64,	"cast.f64.u32",		"ll"},
 	// integers
 	{OP_X32_IF_ZERO,	"if_zero.x32",		"lj"},
 	{OP_X32_IF_NZERO,	"if_nzero.x32",		"lj"},
@@ -45,18 +55,18 @@ static OpcodeDescriptor opcodes[] =
 	{OP_U32_OR,		"or.u32",		"lll"},
 	{OP_U32_XOR,		"xor.u32",		"lll"},
 	// doubles
-	{OP_D64_IF_ZERO,	"if_zero.d64",		"lj"},
-	{OP_D64_IF_NZERO,	"if_nzero.d64",		"lj"},
-	{OP_D64_IF_EQ,		"if_eq.d64",		"llj"},
-	{OP_D64_IF_NEQ,		"if_nqe.d64",		"llj"},
-	{OP_D64_IF_LESS,	"if_less.d64",		"llj"},
-	{OP_D64_IF_LESSEQ,	"if_lesseq.d64",	"llj"},
-	{OP_D64_CONST,		"const.d64",		"ld"},
-	{OP_D64_MOVE,		"move.d64",		"ll"},
-	{OP_D64_ADD,		"add.d64",		"lll"},
-	{OP_D64_SUB,		"sub.d64",		"lll"},
-	{OP_D64_MUL,		"mul.d64",		"lll"},
-	{OP_D64_DIV,		"div.d64",		"lll"},
+	{OP_F64_IF_ZERO,	"if_zero.f64",		"lj"},
+	{OP_F64_IF_NZERO,	"if_nzero.f64",		"lj"},
+	{OP_F64_IF_EQ,		"if_eq.f64",		"llj"},
+	{OP_F64_IF_NEQ,		"if_nqe.f64",		"llj"},
+	{OP_F64_IF_LESS,	"if_less.f64",		"llj"},
+	{OP_F64_IF_LESSEQ,	"if_lesseq.f64",	"llj"},
+	{OP_F64_CONST,		"const.f64",		"ld"},
+	{OP_F64_MOVE,		"move.f64",		"ll"},
+	{OP_F64_ADD,		"add.f64",		"lll"},
+	{OP_F64_SUB,		"sub.f64",		"lll"},
+	{OP_F64_MUL,		"mul.f64",		"lll"},
+	{OP_F64_DIV,		"div.f64",		"lll"},
 	{0,			nullptr,		nullptr}	// end of table
 };
 
@@ -66,7 +76,7 @@ static OpcodeDescriptor opcodes[] =
 
 void Function::dump( Runtime &runtime )
 {
-	std::cout << "Function " << name << " start: " << start << " end: " << end << "\n";
+	std::cout << "Function " << name << " start: " << start << " end: " << end << " paramsSize " << paramsSize << " localsSize " << localsSize << "\n";
 	for( auto &param: params )
 	{
 		std::cout << "    Param " << param.name << " offset " << param.offset << " size " << param.size << "\n";
@@ -89,6 +99,7 @@ void Function::bindVariables()
 		param.offset = -paramsSize - param.size;
 		paramsSize += param.size;
 	}
+	/*
 	localsSize = 0;
 	for( int i = 0; i < locals.size(); i++ )
 	{
@@ -99,10 +110,11 @@ void Function::bindVariables()
 			localsSize += local.size;
 		};
 	}
+	*/
 	for ( auto &local: locals )
 	{
-		if ( localsSize < -local.offset + local.size )
-			localsSize = -local.offset + local.size;
+		if ( localsSize < local.offset + local.size )
+			localsSize = local.offset + local.size;
 	}
 }
 
@@ -140,6 +152,18 @@ void Module::parseComplete()
 // ******************************************
 // *                Runtime                 *
 // ******************************************
+
+void Runtime::freeNativeFunctions()
+{
+	for ( auto &it : nativeFunctions )
+		delete it.function;
+	nativeFunctions.clear();
+};
+
+void Runtime::addNativeFunction( const std::string &name, NativeFunctionBase *function )
+{
+	nativeFunctions.emplace_back( name, function );
+};
 
 void Runtime::parseEOL(Tokenizer &tokenizer)
 {
@@ -196,6 +220,30 @@ struct JumpEntry
 		position(aPosition), direction(aDirection), block(aBlock) {};
 };
 
+/*struct CallEntry
+{
+	JumpPos position;
+	JumpPos callEntry;
+	CallEntry( JumpPos aPosition, JumpPos aCallEntry ): position( aPosition ), callEntry( aCallEntry ) {};
+};*/
+
+JumpPos Runtime::findOrCreateFunctionEntry( const std::string &name )
+{
+	for ( int i = 0; i < functionEntries.size(); i++ )
+		if ( functionEntries[ i ].name == name )
+			return i;
+	functionEntries.emplace_back( name );
+	return functionEntries.size() - 1;
+}
+
+JumpPos Runtime::findNativeFunctionEntry( const std::string &name )
+{
+	for ( int i = 0; i < nativeFunctions.size(); i++ )
+		if ( nativeFunctions[ i ].name == name )
+			return i;
+	throw std::runtime_error( std::string( "Unknown native function name '" + name + "'!" ) );
+}
+
 void Runtime::compile(Tokenizer &tokenizer)
 {
 	try
@@ -207,7 +255,10 @@ void Runtime::compile(Tokenizer &tokenizer)
 		std::shared_ptr<Block> rootBlock, curBlock;
 		std::vector<VarEntry> varEntries;
 		std::vector<JumpEntry> jumpEntries;
+		std::vector<LabelOffset> slices;
+		LabelOffset lastLabelOffset;
 		int64_t size, offset;
+		functionEntries.clear();
 		while ( true )
 		{
 			token = parseType(tokenizer, TOKEN_NAME, "keyword", true);
@@ -243,6 +294,8 @@ void Runtime::compile(Tokenizer &tokenizer)
 				curBlock = rootBlock;
 				varEntries.clear();
 				jumpEntries.clear();
+				slices.clear();
+				lastLabelOffset = 0;
 				parseEOL(tokenizer);
 			}
 			else if ( token.asStr() == "param" )
@@ -267,7 +320,8 @@ void Runtime::compile(Tokenizer &tokenizer)
 				token = parseType(tokenizer, TOKEN_INTEGER, "offset" , true);
 				if ( token.isEnd() )
 				{
-					curFunction->addLocal(curName, -1, size);
+					curFunction->addLocal(curName, lastLabelOffset, size);
+					lastLabelOffset += size;
 				}
 				else
 				{
@@ -275,6 +329,21 @@ void Runtime::compile(Tokenizer &tokenizer)
 					curFunction->addLocal(curName, offset, size);
 					parseEOL(tokenizer);
 				}
+			}
+			else if ( token.asStr() == "slice" )
+			{
+				if ( !curFunction )
+					throw std::runtime_error("slice without function!");
+				slices.push_back(lastLabelOffset);
+			}
+			else if ( token.asStr() == "~slice" )
+			{
+				if ( !curFunction )
+					throw std::runtime_error("~slice without function!");
+				if ( slices.empty() )
+					throw std::runtime_error("Disbalanced slices!");
+				lastLabelOffset = slices.back();
+				slices.pop_back();
 			}
 			else if ( token.asStr() == "~function" )
 			{
@@ -371,7 +440,14 @@ void Runtime::compile(Tokenizer &tokenizer)
 					else if ( *args == 'n' )
 					{
 						argToken = parseType(tokenizer, TOKEN_NAME, "function name");
-						codeEmit<JumpPos>( 0 );
+						JumpPos callPos = findOrCreateFunctionEntry( argToken.asStr() );
+						codeEmit<JumpPos>( callPos );
+					}
+					else if ( *args == 'm' )
+					{
+						argToken = parseType(tokenizer, TOKEN_NAME, "native function name");
+						JumpPos callPos = findNativeFunctionEntry( argToken.asStr() );
+						codeEmit<JumpPos>( callPos );
 					}
 					else if ( *args == 'i' )
 					{
@@ -405,6 +481,20 @@ void Runtime::compile(Tokenizer &tokenizer)
 			throw std::runtime_error(std::string("unfinished function '") + curFunction->getName() + "'!");
 		for ( auto &module: modules )
 			module.second->parseComplete();
+		for ( auto &entry: functionEntries )
+		{
+			for ( auto &module: modules )
+			{
+				if ( module.second->hasFunction( entry.name ) )
+				{
+					entry.function = module.second->getFunction( entry.name );
+					break;
+				}
+			}
+			if ( !entry.function  )
+				throw std::runtime_error(std::string("Unknown function '") + entry.name + "'!" );
+			
+		};
 	}
 	catch (std::runtime_error &error)
 	{
@@ -430,11 +520,19 @@ void Runtime::activateFunction( std::shared_ptr<Function> function, StackPos sp,
 
 std::shared_ptr<Function> Runtime::getFunction( const std::string &moduleName, const std::string &functionName )
 {
-	return modules.at(moduleName)->getFunction(functionName);
+	if ( modules.find( moduleName ) == modules.end() )
+		throw std::runtime_error( std::string( "Module " ) + moduleName + " not found." );
+	std::shared_ptr< Module > module = modules.at( moduleName );
+	if ( !module->hasFunction( functionName ) )
+		throw std::runtime_error( std::string( "Module " ) + moduleName + " has no function " + functionName + "." );
+	return module->getFunction(functionName);
 };
 
 #define STACK_CODEREF(type, index) stackAs<type>(frame.sp + codeAs<LabelOffset>(frame.ip + index))
 
+#define OPERATION_CAST( typeFrom, typeTo ) STACK_CODEREF( typeTo, opcodeSize ) = STACK_CODEREF( typeFrom, opcodeLabelSize ); \
+	frame.ip += opcode2LabelSize; \
+	break;
 #define OPERATION_IMMED( type, immType, op ) STACK_CODEREF( type, opcodeSize ) = op codeAs<immType>( frame.ip + opcodeLabelSize ); \
 	frame.ip += opcodeSize + labelOffsetSize + sizeof(immType); \
 	break;
@@ -478,18 +576,32 @@ int Runtime::oneStep()
 		stackAs<LIntType>( frame.rp ) = STACK_CODEREF( LIntType, opcodeSize );
 		frames.pop_back();
 		break;
-	case OP_D64_RETURN:
+	case OP_F64_RETURN:
 		stackAs<DoubleType>( frame.rp ) = STACK_CODEREF( DoubleType, opcodeSize );
 		frames.pop_back();
 		break;
 	// calls/jumps
 	case OP_CALL:
+		activateFunction( functionEntries[ codeAs<JumpPos>( frame.ip + opcode2LabelSize ) ].function,
+				codeAs<LabelOffset>( frame.ip + opcodeLabelSize ) + frame.sp,
+				codeAs<LabelOffset>( frame.ip + opcodeSize ) + frame.sp );
+		frame.ip += ifBinarySize;
 		break;
-	case OP_ECALL:
+	case OP_NCALL:
+		nativeFunctions[ codeAs<JumpPos>( frame.ip + opcode2LabelSize ) ].function->invoke( 
+				*this, 
+				codeAs<LabelOffset>( frame.ip + opcodeLabelSize ) + frame.sp,
+				codeAs<LabelOffset>( frame.ip + opcodeSize ) + frame.sp );
+		frame.ip += ifBinarySize;
 		break;
 	case OP_JUMP:
 		frame.ip = codeAs<JumpPos>( frame.ip + opcodeSize );
 		break;
+	// conversions
+	case OP_CAST_I32_TO_F64:	OPERATION_CAST( IntType, DoubleType );
+	case OP_CAST_F64_TO_I32:	OPERATION_CAST( DoubleType, IntType );
+	case OP_CAST_U32_TO_F64:	OPERATION_CAST( UIntType, DoubleType );
+	case OP_CAST_F64_TO_U32:	OPERATION_CAST( DoubleType, UIntType );
 	// integers
 	case OP_X32_IF_ZERO:	IF_UNARY( IntType, == 0 );
 	case OP_X32_IF_NZERO:	IF_UNARY( IntType, != 0 );
@@ -511,18 +623,18 @@ int Runtime::oneStep()
 	case OP_U32_OR:		OPERATION_BINARY( UIntType, | );
 	case OP_U32_XOR:	OPERATION_BINARY( UIntType, ^ );
 	// doubles
-	case OP_D64_IF_ZERO:	IF_UNARY( DoubleType, == 0.0 );
-	case OP_D64_IF_NZERO:	IF_UNARY( DoubleType, != 0.0 );
-	case OP_D64_IF_EQ:	IF_BINARY( DoubleType, == );
-	case OP_D64_IF_NEQ:	IF_BINARY( DoubleType, != );
-	case OP_D64_IF_LESS:	IF_BINARY( DoubleType, < );
-	case OP_D64_IF_LESSEQ:	IF_BINARY( DoubleType, <= );
-	case OP_D64_CONST:	OPERATION_IMMED( DoubleType, DoubleType, );
-	case OP_D64_MOVE:	OPERATION_UNARY( DoubleType, );
-	case OP_D64_ADD:	OPERATION_BINARY( DoubleType, + );
-	case OP_D64_SUB:	OPERATION_BINARY( DoubleType, - );
-	case OP_D64_MUL:	OPERATION_BINARY( DoubleType, * );
-	case OP_D64_DIV:	OPERATION_BINARY( DoubleType, / );
+	case OP_F64_IF_ZERO:	IF_UNARY( DoubleType, == 0.0 );
+	case OP_F64_IF_NZERO:	IF_UNARY( DoubleType, != 0.0 );
+	case OP_F64_IF_EQ:	IF_BINARY( DoubleType, == );
+	case OP_F64_IF_NEQ:	IF_BINARY( DoubleType, != );
+	case OP_F64_IF_LESS:	IF_BINARY( DoubleType, < );
+	case OP_F64_IF_LESSEQ:	IF_BINARY( DoubleType, <= );
+	case OP_F64_CONST:	OPERATION_IMMED( DoubleType, DoubleType, );
+	case OP_F64_MOVE:	OPERATION_UNARY( DoubleType, );
+	case OP_F64_ADD:	OPERATION_BINARY( DoubleType, + );
+	case OP_F64_SUB:	OPERATION_BINARY( DoubleType, - );
+	case OP_F64_MUL:	OPERATION_BINARY( DoubleType, * );
+	case OP_F64_DIV:	OPERATION_BINARY( DoubleType, / );
 	default:
 		throw std::runtime_error(std::string("unknown opcode ") + std::to_string(opcode) + " at " + std::to_string(frame.ip));
 	};
