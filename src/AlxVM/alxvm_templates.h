@@ -1,18 +1,26 @@
 #ifndef ALXVM_TEMPLATES
 #define ALXVM_TEMPLATES
 
-#include <stdint.h>
-#include <vector>
-#include <string>
-#include <variant>
-#include <map>
 #include <memory>
-#include <fstream>
-#include <iostream>
+#include <string>
 #include <functional>
+#include <type_traits>
+//#include <iostream>
 
 namespace AlxVM
 {
+
+template<class T>
+struct SizeOf
+{
+	static const int value = sizeof( T );
+};
+
+template<>
+struct SizeOf<void>
+{
+	static const int value = 0;
+};
 
 // ******************************************
 // *           ArgumentsChecker             *
@@ -31,10 +39,10 @@ struct ArgumentsChecker<T, Args...>
 {
 	static void check( std::shared_ptr< Function > function, int index )
 	{
-		if ( function->getParamSize( index ) != sizeof( T ) )
+		if ( function->getParamSize( index ) != SizeOf<T>::value )
 			throw std::runtime_error( std::string( "Incompatible function " ) + function->getName() + 
 						": wrong param " + std::to_string( index + 1 ) + " size " +
-						std::to_string( function->getParamSize( index ) ) + " instead of " + std::to_string( sizeof( T ) ) + "." );
+						std::to_string( function->getParamSize( index ) ) + " instead of " + std::to_string( SizeOf<T>::value ) + "." );
 		ArgumentsChecker< Args... >::check( function, index + 1 );
 	}
 };
@@ -66,45 +74,23 @@ class TypedFunction< T( Args... ) >
 public:
 	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
 	{
-		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
+		checkFunctionCompatibility< Args... >( function, SizeOf<T>::value );
 	};
 	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
 	{
 		function = runtime.getFunction( moduleName, functionName );
-		checkFunctionCompatibility< Args... >( function, sizeof( T ) );
+		checkFunctionCompatibility< Args... >( function, SizeOf<T>::value );
 	};
 	T operator()( Args...args )
 	{
 		//std::cout << "T exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams( sizeof( T ) );
+		runtime.startParams( SizeOf<T>::value );
 		runtime.addParams( args... );
 		runtime.execFunction( function, 0 );
-		return runtime.stackAs< T >( 0 );
-	}
-};
-
-template< typename... Args >
-class TypedFunction< void( Args... ) >
-{
-	std::shared_ptr< Function > function;
-	Runtime &runtime;
-
-public:
-	TypedFunction( std::shared_ptr< Function > aFunction, Runtime &aRuntime ): function( aFunction ), runtime( aRuntime ) 
-	{
-		checkFunctionCompatibility< Args... >( function, 0 );
-	};
-	TypedFunction( Runtime &aRuntime, const std::string &moduleName, const std::string &functionName ): runtime( aRuntime )
-	{
-		function = runtime.getFunction( moduleName, functionName );
-		checkFunctionCompatibility< Args... >( function, 0 );
-	};
-	void operator()( Args... args )
-	{
-		//std::cout << "void exec(" << sizeof...(Args) << ")\n";
-		runtime.startParams( 0 );
-		runtime.addParams( args... );
-		runtime.execFunction( function, 0 );
+		if constexpr ( !std::is_void<T>::value )
+		{
+			return runtime.stackAs< T >( 0 );
+		}
 	}
 };
 
@@ -114,62 +100,78 @@ public:
 
 template <typename... Args> class NativeFunction;
 
-template <typename R>
-class NativeFunction< R() >: public NativeFunctionBase
-{
-	std::function< R() > func;
-public:
-	NativeFunction( const std::function< R() > &aFunc ): func( aFunc ) {};
-	void invoke( Runtime &runtime, StackPos params, StackPos rp ) override
-	{
-		runtime.stackAs<R>( rp ) = func();
-	}	
+#define ALX_ARGS( ... ) __VA_ARGS__
+
+#define ALX_FUNCTION_DEF( typenames, paramnames, arguments ) \
+template < typenames > \
+class NativeFunction< R( paramnames ) >: public NativeFunctionBase \
+{ \
+	std::function< R( paramnames ) > func; \
+public: \
+	NativeFunction( const std::function< R( paramnames ) > &aFunc ): func( aFunc ) {}; \
+	void invoke( Runtime &runtime, StackPos params, StackPos rp ) override \
+	{ \
+		if constexpr ( std::is_void<R>::value ) \
+			func( arguments ); \
+		else \
+			runtime.stackAs<R>( rp ) = func( arguments ); \
+	} \
 };
 
-template <typename R, typename P1>
-class NativeFunction< R(P1) >: public NativeFunctionBase
-{
-	std::function< R(P1) > func;
-public:
-	NativeFunction( const std::function< R(P1) > &aFunc ): func( aFunc ) {};
-	void invoke( Runtime &runtime, StackPos params, StackPos rp ) override
-	{
-		runtime.stackAs<R>( rp ) = func(
-			runtime.stackAs<P1>(params - sizeof(P1))
-		);
-	}	
-};
 
-template <typename R, typename P1, typename P2>
-class NativeFunction< R(P1, P2) >: public NativeFunctionBase
-{
-	std::function< R(P1, P2) > func;
-public:
-	NativeFunction( const std::function< R(P1, P2) > &aFunc ): func( aFunc ) {};
-	void invoke( Runtime &runtime, StackPos params, StackPos rp ) override
-	{
-		runtime.stackAs<R>( rp ) = func(
-			runtime.stackAs<P1>(params - sizeof(P2) - sizeof(P1)),
-			runtime.stackAs<P2>(params - sizeof(P2))
-		);
-	}	
-};
+ALX_FUNCTION_DEF( ALX_ARGS( typename R ), ALX_ARGS(), ALX_ARGS() )
 
-template <typename R, typename P1, typename P2, typename P3>
-class NativeFunction< R(P1, P2, P3) >: public NativeFunctionBase
-{
-	std::function< R(P1, P2, P3) > func;
-public:
-	NativeFunction( const std::function< R(P1, P2, P3) > &aFunc ): func( aFunc ) {};
-	void invoke( Runtime &runtime, StackPos params, StackPos rp ) override
-	{
-		runtime.stackAs<R>( rp ) = func(
-			runtime.stackAs<P1>(params - sizeof(P3) - sizeof(P2) - sizeof(P1)),
-			runtime.stackAs<P2>(params - sizeof(P3) - sizeof(P2)),
-			runtime.stackAs<P3>(params - sizeof(P3))
-		);
-	}	
-};
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1 ), 
+	ALX_ARGS( P1 ), 
+	ALX_ARGS( 
+		runtime.stackAs<P1>(params - sizeof(P1) ) 
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2 ), 
+	ALX_ARGS( P1, P2 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P2))
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3 ), 
+	ALX_ARGS( P1, P2, P3 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P3))
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3, typename P4 ), 
+	ALX_ARGS( P1, P2, P3, P4 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P4) - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P4) - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P4) - sizeof(P3)),
+		runtime.stackAs<P4>(params - sizeof(P4))
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3, typename P4, typename P5 ), 
+	ALX_ARGS( P1, P2, P3, P4, P5 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P5) - sizeof(P4) - sizeof(P3)),
+		runtime.stackAs<P4>(params - sizeof(P5) - sizeof(P4)),
+		runtime.stackAs<P5>(params - sizeof(P5)) 
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6 ), 
+	ALX_ARGS( P1, P2, P3, P4, P5, P6 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3)),
+		runtime.stackAs<P4>(params - sizeof(P6) - sizeof(P5) - sizeof(P4)),
+		runtime.stackAs<P5>(params - sizeof(P6) - sizeof(P5)),
+		runtime.stackAs<P6>(params - sizeof(P6)) 
+		) )
 
 template< typename R, typename... Args >
 void bindNativeFunction( Runtime &runtime, const std::string &name, std::function< R( Args... ) > func )

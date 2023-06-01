@@ -39,8 +39,25 @@ function callNative2 4
 		local nativeParam2 4
 		local nativeStart 0
 	~slice
+	slice
+		local print_numNum 4
+		local print_numStart 0
+	~slice
 	move.x32 nativeParam1 x
 	move.x32 nativeParam2 y
 	ncall r nativeStart sub
+	move.x32 print_numNum r
+	ncall r print_numStart print_num
 	return.x32 r
+~function
+
+function printSome 0
+	param x 4
+	slice
+		local print_numNum 4
+		local print_numStart 0
+	~slice
+	move.x32 print_numNum x
+	ncall x print_numStart print_num
+	return
 ~function
