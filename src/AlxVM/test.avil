@@ -43,11 +43,13 @@ function callNative2 4
 		local print_numNum 4
 		local print_numStart 0
 	~slice
+	stack nativeStart
 	move.x32 nativeParam1 x
 	move.x32 nativeParam2 y
-	ncall r nativeStart sub
+	ncall r sub
+	stack print_numStart
 	move.x32 print_numNum r
-	ncall r print_numStart print_num
+	ncall r print_num
 	return.x32 r
 ~function
 
@@ -57,7 +59,48 @@ function printSome 0
 		local print_numNum 4
 		local print_numStart 0
 	~slice
+	stack print_numStart
 	move.x32 print_numNum x
-	ncall x print_numStart print_num
+	ncall x print_num
+	return
+~function
+
+function factorial 4	; возвращаем int
+	param x 4	; параметр int
+	local ret 4	; локальная переменная int
+	local one 4	; локалка для константы 1
+	slice				; здесь это не надо, но параметры функций лучше оформлять в отдельные слайсы
+		local fact_x 4		; параметр для вызова в рекурсии
+		local fact_start 0	; вершина стека для подлежащего вызова (размер не нужен и даже вреден)
+	~slice
+	stack fact_start		; настраиваем вершину стека так что уже можно заполнять параметры
+	const.x32 one 1			; загружаем в one константу
+	begin				; условный блок
+		if_nzero.x32 x 1	; если x != 0, то идём в конец блока (+1)
+		return.x32 one		; иначе возвращаем 1
+	end
+	sub.x32 fact_x x one		; fact_x = x + one
+	call ret factorial		; рекурсивный вызов (вершина стека у вызыванной функции будет в fact_start)
+					; результат возвращается в ret
+	mul.i32 ret ret x		; ret = ret * x
+	return.x32 ret			; возвращаем ret
+~function
+
+function convert32to64 8
+	param x 4
+	local res 8
+	i64.from.i32 res x
+	return.x64 res
+~function
+
+function incByRef 0
+	param ptr 8
+	local value 4
+	local one 4
+
+	const.x32 one 1
+	load.x32 value ptr
+	add.x32 value value one
+	store.x32 ptr value
 	return
 ~function

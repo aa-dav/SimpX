@@ -12,5 +12,6 @@
         <file>asm/test05-console.asm</file>
         <file>asm/test06-bitmap-noise.asm</file>
         <file>asm/test07-lines.asm</file>
+        <file>asm/test08-wolf3d.asm</file>
     </qresource>
 </RCC>

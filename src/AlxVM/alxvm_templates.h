@@ -172,6 +172,31 @@ ALX_FUNCTION_DEF(
 		runtime.stackAs<P5>(params - sizeof(P6) - sizeof(P5)),
 		runtime.stackAs<P6>(params - sizeof(P6)) 
 		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7 ), 
+	ALX_ARGS( P1, P2, P3, P4, P5, P6, P7 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3)),
+		runtime.stackAs<P4>(params - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4)),
+		runtime.stackAs<P5>(params - sizeof(P7) - sizeof(P6) - sizeof(P5)),
+		runtime.stackAs<P6>(params - sizeof(P7) - sizeof(P6)),
+		runtime.stackAs<P6>(params - sizeof(P7)) 
+		) )
+ALX_FUNCTION_DEF( 
+	ALX_ARGS( typename R, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8 ), 
+	ALX_ARGS( P1, P2, P3, P4, P5, P6, P7, P8 ), 
+	ALX_ARGS(
+		runtime.stackAs<P1>(params - sizeof(P8) - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2) - sizeof(P1)),
+		runtime.stackAs<P2>(params - sizeof(P8) - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3) - sizeof(P2)),
+		runtime.stackAs<P3>(params - sizeof(P8) - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4) - sizeof(P3)),
+		runtime.stackAs<P4>(params - sizeof(P8) - sizeof(P7) - sizeof(P6) - sizeof(P5) - sizeof(P4)),
+		runtime.stackAs<P5>(params - sizeof(P8) - sizeof(P7) - sizeof(P6) - sizeof(P5)),
+		runtime.stackAs<P6>(params - sizeof(P8) - sizeof(P7) - sizeof(P6)),
+		runtime.stackAs<P6>(params - sizeof(P8) - sizeof(P7)),
+		runtime.stackAs<P6>(params - sizeof(P8))
+		) )
 
 template< typename R, typename... Args >
 void bindNativeFunction( Runtime &runtime, const std::string &name, std::function< R( Args... ) > func )

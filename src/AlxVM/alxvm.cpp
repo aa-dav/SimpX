@@ -25,15 +25,33 @@ static OpcodeDescriptor opcodes[] =
 	{OP_X32_RETURN,		"return.x32",		"l"},
 	{OP_X64_RETURN,		"return.x64",		"l"},
 	{OP_F64_RETURN,		"return.f64",		"l"},
+	// stack
+	{OP_STACK,		"stack",		"l"},
 	// calls/jumps
-	{OP_CALL,		"call",			"lln"},
-	{OP_NCALL,		"ncall",		"llm"},
+	{OP_CALL,		"call",			"ln"},
+	{OP_NCALL,		"ncall",		"lm"},
 	{OP_JUMP,		"jump",			"j"},
 	// conversions
-	{OP_CAST_I32_TO_F64,	"cast.i32.f64",		"ll"},
-	{OP_CAST_F64_TO_I32,	"cast.f64.i32",		"ll"},
-	{OP_CAST_I32_TO_F64,	"cast.u32.f64",		"ll"},
-	{OP_CAST_I32_TO_F64,	"cast.f64.u32",		"ll"},
+	{OP_I32_FROM_I64,	"i32.from.i64",		"ll"},
+	{OP_I32_FROM_F64,	"i32.from.f64",		"ll"},
+	{OP_U32_FROM_U64,	"u32.from.u64",		"ll"},
+	{OP_U32_FROM_F64,	"u32.from.f64",		"ll"},
+	{OP_I64_FROM_I32,	"i64.from.i32",		"ll"},
+	{OP_I64_FROM_F64,	"i64.from.f64",		"ll"},
+	{OP_U64_FROM_U32,	"u64.from.u32",		"ll"},
+	{OP_U64_FROM_F64,	"u64.from.f64",		"ll"},
+	{OP_F64_FROM_I32,	"f64.from.i32",		"ll"},
+	{OP_F64_FROM_U32,	"f64.from.u32",		"ll"},
+	{OP_F64_FROM_I64,	"f64.from.i64",		"ll"},
+	{OP_F64_FROM_U64,	"f64.from.u64",		"ll"},
+	// load/store
+	{OP_GET_ADDR,		"get_addr",		"ll"},
+	{OP_X32_LOAD,		"load.x32",		"ll"},
+	{OP_X64_LOAD,		"load.x64",		"ll"},
+	{OP_F64_LOAD,		"load.f64",		"ll"},
+	{OP_X32_STORE,		"store.x32",		"ll"},
+	{OP_X64_STORE,		"store.x64",		"ll"},
+	{OP_F64_STORE,		"store.f64",		"ll"},
 	// integers
 	{OP_X32_IF_ZERO,	"if_zero.x32",		"lj"},
 	{OP_X32_IF_NZERO,	"if_nzero.x32",		"lj"},
@@ -54,6 +72,26 @@ static OpcodeDescriptor opcodes[] =
 	{OP_U32_AND,		"and.u32",		"lll"},
 	{OP_U32_OR,		"or.u32",		"lll"},
 	{OP_U32_XOR,		"xor.u32",		"lll"},
+	// long integers
+	{OP_X64_IF_ZERO,	"if_zero.x64",		"lj"},
+	{OP_X64_IF_NZERO,	"if_nzero.x64",		"lj"},
+	{OP_X64_IF_EQ,		"if_eq.x64",		"llj"},
+	{OP_X64_IF_NEQ,		"if_nqe.x64",		"llj"},
+	{OP_I64_IF_LESS,	"if_less.i64",		"llj"},
+	{OP_I64_IF_LESSEQ,	"if_lesseq.i64",	"llj"},
+	{OP_U64_IF_LESS,	"if_less.u64",		"llj"},
+	{OP_U64_IF_LESSEQ,	"if_lesseq.u64",	"llj"},
+	{OP_X64_CONST,		"const.x64",		"lI"},
+	{OP_X64_MOVE,		"move.x64",		"ll"},
+	{OP_X64_ADD,		"add.x64",		"lll"},
+	{OP_X64_SUB,		"sub.x64",		"lll"},
+	{OP_I64_MUL,		"mul.i64",		"lll"},
+	{OP_I64_DIV,		"div.i64",		"lll"},
+	{OP_I64_MOD,		"mod.i64",		"lll"},
+	{OP_U64_NOT,		"not.u64",		"ll"},
+	{OP_U64_AND,		"and.u64",		"lll"},
+	{OP_U64_OR,		"or.u64",		"lll"},
+	{OP_U64_XOR,		"xor.u64",		"lll"},
 	// doubles
 	{OP_F64_IF_ZERO,	"if_zero.f64",		"lj"},
 	{OP_F64_IF_NZERO,	"if_nzero.f64",		"lj"},
@@ -454,6 +492,11 @@ void Runtime::compile(Tokenizer &tokenizer)
 						argToken = parseType(tokenizer, TOKEN_INTEGER, "integer");
 						codeEmit<IntType>( argToken.asInt() );
 					}
+					else if ( *args == 'I' )
+					{
+						argToken = parseType(tokenizer, TOKEN_INTEGER, "integer");
+						codeEmit<LIntType>( argToken.asInt() );
+					}
 					else if ( *args == 'd' )
 					{
 						argToken = parseType(tokenizer, TOKEN_DOUBLE, "double");
@@ -530,7 +573,13 @@ std::shared_ptr<Function> Runtime::getFunction( const std::string &moduleName, c
 
 #define STACK_CODEREF(type, index) stackAs<type>(frame.sp + codeAs<LabelOffset>(frame.ip + index))
 
-#define OPERATION_CAST( typeFrom, typeTo ) STACK_CODEREF( typeTo, opcodeSize ) = STACK_CODEREF( typeFrom, opcodeLabelSize ); \
+#define OPERATION_CAST( typeTo, typeFrom ) STACK_CODEREF( typeTo, opcodeSize ) = STACK_CODEREF( typeFrom, opcodeLabelSize ); \
+	frame.ip += opcode2LabelSize; \
+	break;
+#define OPERATION_LOAD( type ) STACK_CODEREF( type, opcodeSize ) = *reinterpret_cast<type *>( STACK_CODEREF( PtrType, opcodeLabelSize ) ); \
+	frame.ip += opcode2LabelSize; \
+	break;
+#define OPERATION_STORE( type ) *reinterpret_cast<type *>( STACK_CODEREF( PtrType, opcodeSize ) ) = STACK_CODEREF( type, opcodeLabelSize ); \
 	frame.ip += opcode2LabelSize; \
 	break;
 #define OPERATION_IMMED( type, immType, op ) STACK_CODEREF( type, opcodeSize ) = op codeAs<immType>( frame.ip + opcodeLabelSize ); \
@@ -580,28 +629,49 @@ int Runtime::oneStep()
 		stackAs<DoubleType>( frame.rp ) = STACK_CODEREF( DoubleType, opcodeSize );
 		frames.pop_back();
 		break;
+	case OP_STACK:
+		frame.activeSp = codeAs<LabelOffset>( frame.ip + opcodeSize ) + frame.sp;
+		frame.ip += opcodeLabelSize;
+		break;
 	// calls/jumps
 	case OP_CALL:
-		activateFunction( functionEntries[ codeAs<JumpPos>( frame.ip + opcode2LabelSize ) ].function,
-				codeAs<LabelOffset>( frame.ip + opcodeLabelSize ) + frame.sp,
+		activateFunction( functionEntries[ codeAs<JumpPos>( frame.ip + opcodeLabelSize ) ].function,
+				frame.activeSp,
 				codeAs<LabelOffset>( frame.ip + opcodeSize ) + frame.sp );
-		frame.ip += ifBinarySize;
+		frame.ip += callSize;
 		break;
 	case OP_NCALL:
-		nativeFunctions[ codeAs<JumpPos>( frame.ip + opcode2LabelSize ) ].function->invoke( 
-				*this, 
-				codeAs<LabelOffset>( frame.ip + opcodeLabelSize ) + frame.sp,
+		nativeFunctions[ codeAs<JumpPos>( frame.ip + opcodeLabelSize ) ].function->invoke(
+				*this, frame.activeSp,
 				codeAs<LabelOffset>( frame.ip + opcodeSize ) + frame.sp );
-		frame.ip += ifBinarySize;
+		frame.ip += callSize;
 		break;
 	case OP_JUMP:
 		frame.ip = codeAs<JumpPos>( frame.ip + opcodeSize );
 		break;
 	// conversions
-	case OP_CAST_I32_TO_F64:	OPERATION_CAST( IntType, DoubleType );
-	case OP_CAST_F64_TO_I32:	OPERATION_CAST( DoubleType, IntType );
-	case OP_CAST_U32_TO_F64:	OPERATION_CAST( UIntType, DoubleType );
-	case OP_CAST_F64_TO_U32:	OPERATION_CAST( DoubleType, UIntType );
+	case OP_I32_FROM_I64:	OPERATION_CAST( IntType, LIntType );
+	case OP_I32_FROM_F64:	OPERATION_CAST( IntType, DoubleType );
+	case OP_U32_FROM_U64:	OPERATION_CAST( UIntType, LUIntType );
+	case OP_U32_FROM_F64:	OPERATION_CAST( UIntType, DoubleType );
+	case OP_I64_FROM_I32:	OPERATION_CAST( LIntType, IntType );
+	case OP_I64_FROM_F64:	OPERATION_CAST( LIntType, DoubleType );
+	case OP_U64_FROM_U32:	OPERATION_CAST( LUIntType, UIntType );
+	case OP_U64_FROM_F64:	OPERATION_CAST( LUIntType, DoubleType );
+	case OP_F64_FROM_I32:	OPERATION_CAST( DoubleType, IntType );
+	case OP_F64_FROM_U32:	OPERATION_CAST( DoubleType, UIntType );
+	case OP_F64_FROM_I64:	OPERATION_CAST( DoubleType, LIntType );
+	case OP_F64_FROM_U64:	OPERATION_CAST( DoubleType, LUIntType );
+	// load/store
+	case OP_GET_ADDR:	STACK_CODEREF( void *, opcodeSize ) = &STACK_CODEREF( char, opcodeLabelSize );
+				frame.ip += opcode2LabelSize;
+				break;
+	case OP_X32_LOAD:	OPERATION_LOAD( IntType );
+	case OP_X64_LOAD:	OPERATION_LOAD( LIntType );
+	case OP_F64_LOAD:	OPERATION_LOAD( DoubleType );
+	case OP_X32_STORE:	OPERATION_STORE( IntType );
+	case OP_X64_STORE:	OPERATION_STORE( LIntType );
+	case OP_F64_STORE:	OPERATION_STORE( DoubleType );
 	// integers
 	case OP_X32_IF_ZERO:	IF_UNARY( IntType, == 0 );
 	case OP_X32_IF_NZERO:	IF_UNARY( IntType, != 0 );
@@ -622,6 +692,26 @@ int Runtime::oneStep()
 	case OP_U32_AND:	OPERATION_BINARY( UIntType, & );
 	case OP_U32_OR:		OPERATION_BINARY( UIntType, | );
 	case OP_U32_XOR:	OPERATION_BINARY( UIntType, ^ );
+	// long integers
+	case OP_X64_IF_ZERO:	IF_UNARY( LIntType, == 0 );
+	case OP_X64_IF_NZERO:	IF_UNARY( LIntType, != 0 );
+	case OP_X64_IF_EQ:	IF_BINARY( LIntType, == );
+	case OP_X64_IF_NEQ:	IF_BINARY( LIntType, != );
+	case OP_I64_IF_LESS:	IF_BINARY( LIntType, < );
+	case OP_I64_IF_LESSEQ:	IF_BINARY( LIntType, <= );
+	case OP_U64_IF_LESS:	IF_BINARY( LUIntType, < );
+	case OP_U64_IF_LESSEQ:	IF_BINARY( LUIntType, <= );
+	case OP_X64_CONST:	OPERATION_IMMED( LIntType, LIntType, );
+	case OP_X64_MOVE:	OPERATION_UNARY( LIntType, );
+	case OP_X64_ADD:	OPERATION_BINARY( LIntType, + );
+	case OP_X64_SUB:	OPERATION_BINARY( LIntType, - );
+	case OP_I64_MUL:	OPERATION_BINARY( LIntType, * );
+	case OP_I64_DIV:	OPERATION_BINARY( LIntType, / );
+	case OP_I64_MOD:	OPERATION_BINARY( LIntType, % );
+	case OP_U64_NOT:	OPERATION_UNARY( LUIntType, ~ );
+	case OP_U64_AND:	OPERATION_BINARY( LUIntType, & );
+	case OP_U64_OR:		OPERATION_BINARY( LUIntType, | );
+	case OP_U64_XOR:	OPERATION_BINARY( LUIntType, ^ );
 	// doubles
 	case OP_F64_IF_ZERO:	IF_UNARY( DoubleType, == 0.0 );
 	case OP_F64_IF_NZERO:	IF_UNARY( DoubleType, != 0.0 );

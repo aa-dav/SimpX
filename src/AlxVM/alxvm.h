@@ -24,14 +24,32 @@ enum Opcodes
 	OP_X64_RETURN,		// value
 	OP_F64_RETURN,		// value
 	// calls/jumps
+	OP_STACK,		// value
+	// calls/jumps
 	OP_CALL,		// function_handle, stack_frame
 	OP_NCALL,		// function_handle, stack_frame
 	OP_JUMP,		// addr
 	// conversions
-	OP_CAST_I32_TO_F64,	// a = b
-	OP_CAST_F64_TO_I32,	// a = b
-	OP_CAST_U32_TO_F64,	// a = b
-	OP_CAST_F64_TO_U32,	// a = b
+	OP_I32_FROM_I64,	// a = b
+	OP_I32_FROM_F64,	// a = b
+	OP_U32_FROM_U64,	// a = b
+	OP_U32_FROM_F64,	// a = b
+	OP_I64_FROM_I32,	// a = b
+	OP_I64_FROM_F64,	// a = b
+	OP_U64_FROM_U32,	// a = b
+	OP_U64_FROM_F64,	// a = b
+	OP_F64_FROM_I32,	// a = b
+	OP_F64_FROM_U32,	// a = b
+	OP_F64_FROM_I64,	// a = b
+	OP_F64_FROM_U64,	// a = b
+	// load/store
+	OP_GET_ADDR,
+	OP_X32_LOAD,
+	OP_X64_LOAD,
+	OP_F64_LOAD,
+	OP_X32_STORE,
+	OP_X64_STORE,
+	OP_F64_STORE,
 	// integers
 	OP_X32_IF_ZERO,		// a == 0, addr
 	OP_X32_IF_NZERO,	// a != 0, addr
@@ -52,6 +70,26 @@ enum Opcodes
 	OP_U32_AND,		// a = b & c
 	OP_U32_OR,		// a = b | c
 	OP_U32_XOR,		// a = b ^ c
+	// long integers
+	OP_X64_IF_ZERO,		// a == 0, addr
+	OP_X64_IF_NZERO,	// a != 0, addr
+	OP_X64_IF_EQ,		// a == b, addr
+	OP_X64_IF_NEQ,		// a != b, addr
+	OP_I64_IF_LESS,		// a < b, addr
+	OP_I64_IF_LESSEQ,	// a <= b, addr
+	OP_U64_IF_LESS,		// a < b, addr
+	OP_U64_IF_LESSEQ,	// a <= b, addr
+	OP_X64_CONST,		// dest, const
+	OP_X64_MOVE,		// dest, const
+	OP_X64_ADD,		// a = b + c
+	OP_X64_SUB,		// a = b - c
+	OP_I64_MUL,		// a = b * c
+	OP_I64_DIV,		// a = b / c
+	OP_I64_MOD,		// a = b % c
+	OP_U64_NOT,		// a = ~b
+	OP_U64_AND,		// a = b & c
+	OP_U64_OR,		// a = b | c
+	OP_U64_XOR,		// a = b ^ c
 	// doubles
 	OP_F64_IF_ZERO,		// a == 0, addr
 	OP_F64_IF_NZERO,	// a != 0, addr
@@ -73,17 +111,19 @@ typedef uint16_t	StackPos;	// type of the index in the stack
 typedef uint16_t	JumpPos;	// type of the index in the code
 typedef int32_t		IntType;	// int type
 typedef uint32_t	UIntType;	// unsigned int type
-typedef int32_t		LIntType;	// long int type
-typedef uint32_t	LUIntType;	// long unsigned int type
+typedef int64_t		LIntType;	// long int type
+typedef uint64_t	LUIntType;	// long unsigned int type
 typedef double		DoubleType;	// double type
-typedef uint32_t	PtrType;	// type of the pointer in the heap
+typedef uint64_t 	PtrType;	// type of the pointer in the heap
 
 const int opcodeSize		= sizeof(Opcode);
 const int labelOffsetSize	= sizeof(LabelOffset);
 const int stackPosSize		= sizeof(StackPos);
 const int jumpPosSize		= sizeof(JumpPos);
 const int intSize		= sizeof(IntType);
+const int lIntSize		= sizeof(LIntType);
 const int ptrSize		= sizeof(PtrType);
+const int callSize		= opcodeSize + 1 * labelOffsetSize + jumpPosSize;
 const int ifUnarySize		= opcodeSize + 1 * labelOffsetSize + jumpPosSize;
 const int ifBinarySize		= opcodeSize + 2 * labelOffsetSize + jumpPosSize;
 const int opcodeLabelSize	= opcodeSize + 1 * labelOffsetSize;
@@ -151,10 +191,11 @@ struct Frame
 {	
 	std::shared_ptr<Function> function;
 	JumpPos ip;	// instruction pointer
-	StackPos sp;	// stack pointer
+	StackPos sp;	// beginning of function stack
+	StackPos activeSp;	// actual stack pointer
 	StackPos rp;	// result pointer
 
-	Frame(std::shared_ptr<Function> aFunction, StackPos aSp, StackPos aRp, JumpPos anIp): function(aFunction), sp(aSp), rp(aRp), ip(anIp) {};
+	Frame(std::shared_ptr<Function> aFunction, StackPos aSp, StackPos aRp, JumpPos anIp): function(aFunction), sp(aSp), activeSp(aSp), rp(aRp), ip(anIp) {};
 };
 
 // ******************************************
